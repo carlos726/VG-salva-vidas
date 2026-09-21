@@ -23,6 +23,9 @@
       --amarelo-bg: #fefce8; --amarelo-border: #fef08a; --amarelo-text: #ca8a04;
       --verde-bg: #f0fdf4; --verde-border: #bbf7d0; --verde-text: #16a34a;
       --azul-bg: #eff6ff; --azul-border: #bfdbfe; --azul-text: #2563eb;
+
+      /* Cor Internação */
+      --roxo-bg: #f3e8ff; --roxo-border: #d8b4fe; --roxo-text: #7e22ce;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
@@ -268,7 +271,7 @@
       padding: 12px 14px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      font-size: 0.95rem; /* Evita zoom automático no mobile */
+      font-size: 0.95rem;
       outline: none;
       background: #fff;
       color: var(--text-main);
@@ -315,6 +318,9 @@
     .btn-pdf { background: #dc2626; color: #fff; }
     .btn-pdf:hover { background: #b91c1c; }
 
+    .btn-internar { background: #7e22ce; color: #fff; }
+    .btn-internar:hover { background: #6b21a8; }
+
     .btn-tv { background: #0284c7; color: #fff; }
     .btn-tv:hover { background: #0369a1; }
 
@@ -341,7 +347,7 @@
       grid-column: 1 / -1;
     }
 
-    /* Estilos do Modal de Formulário de Alta */
+    /* Estilos do Modal de Formulário */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -407,7 +413,6 @@
       gap: 10px;
     }
 
-    /* 💻 ESTILOS PARA TELA GRANDE (DESKTOP / TABLETS) */
     @media (min-width: 640px) {
       body { padding: 32px 24px; }
       .form-grid { grid-template-columns: 1fr 1fr; }
@@ -462,6 +467,7 @@
         <div class="mini-chamada-actions">
           <button class="btn btn-tv" style="flex: 1;" onclick="chamarPacienteMiniForm()">📺 Chamar</button>
           <button class="btn btn-pdf" style="flex: 1;" onclick="darAltaMiniForm()">📄 Dar Alta</button>
+          <button class="btn btn-internar" style="flex: 1;" onclick="internarMiniForm()">🏥 Internar</button>
         </div>
       </div>
 
@@ -478,6 +484,18 @@
         </div>
       </div>
 
+      <!-- Campos de Quarto e Leito adicionados -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="quarto">Quarto / Ala</label>
+          <input id="quarto" placeholder="Ex: Quarto 102 ou Ala B">
+        </div>
+        <div class="form-group">
+          <label for="leito">Número do Leito</label>
+          <input id="leito" placeholder="Ex: Leito 03">
+        </div>
+      </div>
+
       <div class="form-group">
         <label>Diagnóstico</label>
         <input id="diagnostico" placeholder="Informe o diagnóstico do paciente">
@@ -489,7 +507,8 @@
       </div>
 
       <div class="form-actions">
-        <button class="btn btn-pdf" style="padding: 12px 20px;" onclick="abrirModalAlta()">📄 Dar Alta ao Paciente</button>
+        <button class="btn btn-pdf" style="padding: 12px 18px;" onclick="abrirModalAlta()">📄 Dar Alta ao Paciente</button>
+        <button class="btn btn-internar" style="padding: 12px 18px;" onclick="redirecionarParaInternacao()">🏥 Encaminhar p/ Internação</button>
         <button class="btn btn-primary" style="padding: 12px 24px;" onclick="salvar()">Finalizar e Salvar Consulta</button>
       </div>
     </div>
@@ -505,12 +524,10 @@
       <button class="close-btn" onclick="fecharModalAlta()">&times;</button>
     </div>
     <div class="modal-body">
-      
       <div class="form-group">
         <label>Nome do Paciente</label>
         <input id="alta-paciente" readonly style="background: #f1f5f9; font-weight: bold;">
       </div>
-
       <div class="form-grid">
         <div class="form-group">
           <label>Tipo de Alta</label>
@@ -525,17 +542,14 @@
           <input id="alta-diagnostico" placeholder="Diagnóstico de saída">
         </div>
       </div>
-
       <div class="form-group">
         <label>Prescrição de Saída / Medicação Recomendada</label>
         <textarea id="alta-medicacao" style="min-height: 70px;" placeholder="Medicamentos para uso domiciliar..."></textarea>
       </div>
-
       <div class="form-group">
         <label>Orientações de Alta e Cuidados Domiciliares</label>
         <textarea id="alta-obs" style="min-height: 90px;" placeholder="Recomendações de repouso, dieta, retorno ou sinais de alerta..."></textarea>
       </div>
-
     </div>
     <div class="modal-footer">
       <button class="btn" style="background: #e2e8f0; color: var(--text-main);" onclick="fecharModalAlta()">Cancelar</button>
@@ -564,13 +578,11 @@ function carregar() {
       }
 
       data.forEach((t, index) => {
-        // Preencher o select do mini formulário
         const opt = document.createElement("option");
         opt.value = index;
         opt.textContent = `${t.nome} (Risco: ${t.risco || 'Verde'})`;
         selectChamada.appendChild(opt);
 
-        // Renderizar os cards
         const riscoClass = (t.risco || 'verde').toLowerCase();
         div.innerHTML += `
           <div class="card">
@@ -587,7 +599,8 @@ function carregar() {
             <div class="card-actions">
               <button class="btn btn-success" onclick="selecionar(${index})">Atender</button>
               <button class="btn btn-tv" onclick="chamarNaTV('${t.nome}')">📺 Chamar</button>
-              <button class="btn btn-pdf" onclick="darAlta(${index})">📄 Dar Alta</button>
+              <button class="btn btn-pdf" onclick="darAlta(${index})">📄 Alta</button>
+              <button class="btn btn-internar" onclick="internar(${index})">🏥 Internar</button>
             </div>
           </div>
         `;
@@ -621,6 +634,11 @@ function darAlta(index) {
   abrirModalAlta();
 }
 
+function internar(index) {
+  selecionar(index);
+  redirecionarParaInternacao();
+}
+
 function chamarPacienteMiniForm() {
   const select = document.getElementById("select-chamada");
   const index = select.value;
@@ -644,12 +662,21 @@ function darAltaMiniForm() {
   darAlta(index);
 }
 
+function internarMiniForm() {
+  const select = document.getElementById("select-chamada");
+  const index = select.value;
+  if (index === "") {
+    alert("Selecione um paciente na lista para internar.");
+    return;
+  }
+  internar(index);
+}
+
 function selecionar(index) {
   const t = triagensCarregadas[index];
   document.getElementById("paciente").value = t.nome;
   document.getElementById("obs").value = t.observacao || "";
 
-  // Sincronizar o select da chamada rápida também
   document.getElementById("select-chamada").value = index;
 
   if (t.alergia && t.alergia !== "Nenhuma") {
@@ -672,6 +699,44 @@ function carregarMedicacoes() {
     });
 }
 
+/* Redirecionamento e Salvamento de Internação no localStorage */
+function redirecionarParaInternacao() {
+  const paciente = document.getElementById("paciente").value;
+  if (!paciente) {
+    alert("Selecione um paciente para solicitar a internação.");
+    return;
+  }
+  
+  const diagnostico = document.getElementById("diagnostico").value || "Encaminhado do Consultório";
+  const obs = document.getElementById("obs").value || "Sem observações adicionais";
+  const quarto = document.getElementById("quarto").value || "Não informado";
+  const leito = document.getElementById("leito").value || "Não informado";
+
+  // Objeto do paciente internado
+  const novoInternado = {
+    id: Date.now(),
+    paciente: paciente,
+    diagnostico: diagnostico,
+    obs: obs,
+    quarto: quarto,
+    leito: leito,
+    dataHora: new Date().toLocaleString("pt-BR"),
+    status: "Internado"
+  };
+
+  // Salva no localStorage para sincronizar com a página internacao.html
+  let listaInternados = JSON.parse(localStorage.getItem("listaInternados")) || [];
+  listaInternados.push(novoInternado);
+  localStorage.setItem("listaInternados", JSON.stringify(listaInternados));
+
+  // Limpa os campos após encaminhar
+  document.getElementById("quarto").value = "";
+  document.getElementById("leito").value = "";
+
+  // Abre a janela de internação
+  window.open("internacao.html", "_blank");
+}
+
 /* Modal de Alta */
 function abrirModalAlta() {
   const paciente = document.getElementById("paciente").value;
@@ -680,7 +745,6 @@ function abrirModalAlta() {
     return;
   }
 
-  // Preenche o formulário do modal com o que já foi preenchido na consulta
   document.getElementById("alta-paciente").value = paciente;
   document.getElementById("alta-diagnostico").value = document.getElementById("diagnostico").value;
   document.getElementById("alta-medicacao").value = document.getElementById("medicacao").value;
@@ -766,7 +830,7 @@ function salvar() {
     document.getElementById("diagnostico").value = "";
     document.getElementById("medicacao").value = "";
     document.getElementById("obs").value = "";
-    carregar();''
+    carregar();
   });
 }
 

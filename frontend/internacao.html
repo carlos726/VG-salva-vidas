@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Módulo de Internação - VG Salva Vidas</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --primary: #7e22ce;
+      --primary-hover: #6b21a8;
+      --bg-main: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #dc2626;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .header-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .header-title h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn-voltar { background: #e2e8f0; color: var(--text-main); }
+    .btn-voltar:hover { background: #cbd5e1; }
+
+    .btn-alta { background: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.8rem; }
+    .btn-alta:hover { background: #b91c1c; }
+
+    .card-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text-main);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    th {
+      background-color: #faf5ff;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    tr:hover { background-color: #f8fafc; }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: #f3e8ff;
+      color: var(--primary);
+      border: 1px solid #d8b4fe;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header-panel">
+    <div class="header-title">
+      <h2>🏥 Módulo de Pacientes Internados</h2>
+    </div>
+    <button class="btn btn-voltar" onclick="window.close()">⬅️ Voltar ao Painel Médico</button>
+  </div>
+
+  <div class="card-section">
+    <div class="section-title">📋 Lista de Pacientes em Leito de Internação</div>
+    
+    <table>
+     <thead>
+  <tr>
+    <th>Paciente</th>
+    <th>Quarto / Ala</th>
+    <th>Leito</th>
+    <th>Data / Hora Entrada</th>
+    <th>Diagnóstico / Conduta</th>
+    <th>Observações</th>
+    <th>Status</th>
+    <th>Ação</th>
+  </tr>
+</thead>
+      <tbody id="lista-corpo"></tbody>
+    </table>
+    <div id="empty-msg" class="empty-state" style="display: none;">
+      Nenhum paciente internado no momento.
+    </div>
+  </div>
+
+</div>
+
+<script>
+function carregarPacientesInternados() {
+  const lista = JSON.parse(localStorage.getItem("listaInternados")) || [];
+  const tbody = document.getElementById("lista-corpo");
+  const emptyMsg = document.getElementById("empty-msg");
+
+  tbody.innerHTML = "";
+
+  if (lista.length === 0) {
+    emptyMsg.style.display = "block";
+    return;
+  }
+
+  emptyMsg.style.display = "none";
+
+  // Exibe do mais recente para o mais antigo
+  lista.slice().reverse().forEach(item => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><b>${item.paciente}</b></td>
+      <td>${item.dataHora}</td>
+      <td>${item.diagnostico}</td>
+      <td>${item.obs}</td>
+      <td><span class="badge">${item.status}</span></td>
+      <td>
+        <button class="btn btn-alta" onclick="darAlta(${item.id})">Dar Alta</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function darAlta(id) {
+  if (confirm("Deseja confirmar a alta médica deste paciente?")) {
+    let lista = JSON.parse(localStorage.getItem("listaInternados")) || [];
+    lista = lista.filter(item => item.id !== id);
+    localStorage.setItem("listaInternados", JSON.stringify(lista));
+    carregarPacientesInternados();
+  }
+}
+
+// Atualiza a tabela caso o médico interna outro paciente sem fechar essa janela
+window.addEventListener("storage", carregarPacientesInternados);
+
+document.addEventListener("DOMContentLoaded", carregarPacientesInternados);
+</script>
+
+</body>
+</html>

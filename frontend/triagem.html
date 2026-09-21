@@ -150,7 +150,7 @@
         })
         .catch(() => {
           document.getElementById("fila-pacientes").innerHTML =
-            "<p style='color:red; text-align:center;'>Erro ao carregar pacientes.</p>";
+            "<p style='color:red; text-align:center;'>Erro ao carregar pacientes. Verifique se a API (servidor) está rodando na porta 3000.</p>";
         });
     }
 
@@ -242,8 +242,11 @@
       });
     }
 
-    carregarPacientes();
-    setInterval(carregarPacientes, 10000);
+    // Executa assim que o DOM estiver completamente carregado
+    document.addEventListener("DOMContentLoaded", () => {
+      carregarPacientes();
+      setInterval(carregarPacientes, 10000);
+    });
   </script>
 </body>
 </html>

@@ -14,6 +14,11 @@
       "usuario": "atendimento",
       "senha": "123",
       "tipo": "atendimento"
+    },
+    {
+      "usuario": "medicacoes",
+      "senha": "123",
+      "tipo": "medicacoes"
     }
   ],
   "pacientes": [
@@ -144,6 +149,27 @@
       "tipo": "Convenio",
       "status": "triagem",
       "createdAt": "2026-08-05T14:02:08.417Z"
+    },
+    {
+      "id": 1787663847369,
+      "nome": "carlos eduardo ferrreira dos santos",
+      "tipo": "Particular",
+      "status": "triagem",
+      "createdAt": "2026-08-25T13:17:27.369Z"
+    },
+    {
+      "id": 1788186893087,
+      "nome": "biraaaaaaaaaaaaaaaaa",
+      "tipo": "Convenio",
+      "status": "triagem",
+      "createdAt": "2026-08-31T14:34:53.087Z"
+    },
+    {
+      "id": 1788188239380,
+      "nome": "bira cabeca de toisinho",
+      "tipo": "Convenio",
+      "status": "triagem",
+      "createdAt": "2026-08-31T14:57:19.380Z"
     }
   ],
   "triagens": [
@@ -334,6 +360,17 @@
       "risco": "verde",
       "status": "aguardando_medico",
       "createdAt": "2026-08-17T14:50:47.867Z"
+    },
+    {
+      "id": 1790000164794,
+      "nome": "biraaaaaa ",
+      "sintoma": "diarreia",
+      "temperatura": 0.9,
+      "alergia": "333333",
+      "observacao": "efev",
+      "risco": "vermelho",
+      "status": "aguardando_medico",
+      "createdAt": "2026-09-21T14:16:04.794Z"
     }
   ],
   "consultas": [
@@ -363,7 +400,7 @@
     },
     {
       "id": 1776869011320,
-      "paciente": "oieo ",
+      "paciente": "kinder ovo ",
       "diagnostico": "teste",
       "medicacao": "nubotom",
       "obs": "flex ",
@@ -435,7 +472,7 @@
     },
     {
       "id": 1781007896055,
-      "paciente": "ooiio ",
+      "paciente": "kinder ovo ",
       "diagnostico": "tste",
       "medicacao": "Omeprazol",
       "obs": "teste",
@@ -475,47 +512,47 @@
     }
   ],
   "tv_chamada": {
-    "id": "1787580742285",
+    "id": "1790604420730",
     "localTipo": "GUICHÊ",
     "localNumero": "01",
-    "paciente": "teste",
-    "hora": "11:12"
+    "paciente": "bira cabeca de toisinho",
+    "hora": "11:07"
   },
   "tv_historico": [
     {
-      "id": "1787580742285",
+      "id": "1790604420730",
       "localTipo": "GUICHÊ",
       "localNumero": "01",
-      "paciente": "teste",
-      "hora": "11:12"
+      "paciente": "bira cabeca de toisinho",
+      "hora": "11:07"
     },
     {
-      "id": "1786978896332",
-      "localTipo": "CONSULTÓRIO",
+      "id": "1790000202450",
+      "localTipo": "GUICHÊ",
       "localNumero": "01",
-      "paciente": "carlos",
-      "hora": "12:01"
+      "paciente": "kinder ovo ",
+      "hora": "11:16"
     },
     {
-      "id": "1786454550178",
+      "id": "1790000197492",
       "localTipo": "GUICHÊ",
       "localNumero": "01",
       "paciente": "",
-      "hora": "10:22"
+      "hora": "11:16"
     },
     {
-      "id": "1786452864874",
-      "localTipo": "CONSULTÓRIO",
+      "id": "1790000185524",
+      "localTipo": "GUICHÊ",
       "localNumero": "01",
-      "paciente": "test",
-      "hora": "09:54"
+      "paciente": "bira cabeca de toisinho",
+      "hora": "11:16"
     },
     {
-      "id": "1786449828531",
+      "id": "1789396372006",
       "localTipo": "CONSULTÓRIO",
       "localNumero": "01",
-      "paciente": "yan",
-      "hora": "09:03"
+      "paciente": "testee444",
+      "hora": "11:32"
     }
   ]
 }

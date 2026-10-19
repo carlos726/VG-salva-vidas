@@ -2,7 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
-const fetch = require("node-fetch");
+const fetch = require("node-fetch"); // Necessário para fazer requisições para a API de IA
 
 const app = express();
 
@@ -57,7 +57,7 @@ app.post("/atendimento", (req, res) => {
   const paciente = {
     id: Date.now(),
     nome: req.body.nome,
-    cpf: req.body.cpf,
+    cpf: req.body.documento, // Ajustado para corresponder ao campo do front-end de atendimento
     tipo: req.body.tipo,
     status: "triagem",
     createdAt: new Date()
@@ -75,12 +75,12 @@ app.get("/pacientes", (req, res) => {
   res.json(db.pacientes);
 });
 
-// TRIAGEM
+// TRIAGEM (Corrigido para aceitar e priorizar a classificação vinda da IA)
 app.post("/triagem", (req, res) => {
   const db = readDB();
 
-  // Usa prioritariamente o risco enviado pela IA, se não houver, aplica padrão
-  let risco = req.body.risco || "verde";
+  // Utiliza prioritariamente o risco enviado pela triagem (calculado via IA), se não houver, assume verde
+  const risco = req.body.risco || "verde";
 
   const triagem = {
     id: Date.now(),
@@ -100,8 +100,8 @@ app.post("/triagem", (req, res) => {
 
   db.triagens.push(triagem);
 
-  // Atualiza o status do paciente na fila para removê-lo da triagem pendente
-  const pacienteFila = db.pacientes.find(p => p.nome.toLowerCase() === req.body.nome.toLowerCase());
+  // Atualiza o status do paciente na lista de pacientes para removê-lo da fila de triagem pendente
+  const pacienteFila = db.pacientes.find(p => p.nome && p.nome.toLowerCase() === req.body.nome.toLowerCase());
   if (pacienteFila) {
     pacienteFila.status = "aguardando_medico";
   }

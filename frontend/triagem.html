@@ -4,8 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Triagem - VG Salva Vidas</title>
-  <!-- Chamada para a folha de estilo externa -->
   <link rel="stylesheet" href="css/2style.css">
+  <style>
+    .badge-risco {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      color: #fff;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+    .badge-vermelho { background-color: #dc3545; }
+    .badge-amarelo { background-color: #ffc107; color: #333; }
+    .badge-verde { background-color: #28a745; }
+    .badge-azul { background-color: #17a2b8; }
+  </style>
 </head>
 
 <body>
@@ -33,7 +47,7 @@
 
     <hr>
 
-    <!-- Formulário de Triagem Extendido -->
+    <!-- Formulário Avançado de Triagem -->
     <h3 class="form-section-title">📋 Formulário Avançado de Triagem</h3>
     
     <div class="form-group" style="margin-bottom: 16px;">
@@ -45,22 +59,22 @@
     <div class="grid-vitais">
       <div class="form-group">
         <label for="temp">Temperatura (°C)</label>
-        <input id="temp" type="number" step="0.1" placeholder="Ex: 36.5">
+        <input id="temp" type="number" step="0.1" placeholder="Ex: 36.5" oninput="analisarComIA()">
       </div>
 
       <div class="form-group">
         <label for="pa">Pressão Arterial (PA)</label>
-        <input id="pa" type="text" placeholder="Ex: 120/80">
+        <input id="pa" type="text" placeholder="Ex: 120/80" oninput="analisarComIA()">
       </div>
 
       <div class="form-group">
         <label for="saturacao">Saturação O₂ (%)</label>
-        <input id="saturacao" type="number" placeholder="Ex: 98">
+        <input id="saturacao" type="number" placeholder="Ex: 98" oninput="analisarComIA()">
       </div>
 
       <div class="form-group">
         <label for="fc">Freq. Cardíaca (BPM)</label>
-        <input id="fc" type="number" placeholder="Ex: 80">
+        <input id="fc" type="number" placeholder="Ex: 80" oninput="analisarComIA()">
       </div>
     </div>
 
@@ -68,7 +82,7 @@
     <div class="grid-vitais">
       <div class="form-group">
         <label for="sintoma">Sintoma Principal *</label>
-        <select id="sintoma" required>
+        <select id="sintoma" required onchange="analisarComIA()">
           <option value="">Selecione o sintoma</option>
           <option value="dor_leve">Dor leve</option>
           <option value="resfriado">Resfriado</option>
@@ -88,7 +102,7 @@
 
       <div class="form-group">
         <label for="dor">Escala de Dor (0 a 10)</label>
-        <select id="dor">
+        <select id="dor" onchange="analisarComIA()">
           <option value="0">0 - Sem Dor</option>
           <option value="2">1-3 Leve</option>
           <option value="5">4-6 Moderada</option>
@@ -105,10 +119,17 @@
 
     <div class="form-group">
       <label for="observacao">Observações Clínicas e Histórico</label>
-      <textarea id="observacao" placeholder="Detalhe outros sintomas, comorbidades ou medicamentos em uso..."></textarea>
+      <textarea id="observacao" placeholder="Detalhe outros sintomas, comorbidades ou medicamentos em uso..." oninput="analisarComIA()"></textarea>
     </div>
 
-    <!-- Exibição do Risco -->
+    <!-- Painel de Exibição da IA -->
+    <div id="ia-panel" style="display: none; background: #f0f7ff; border: 1px solid #b8daff; border-radius: 8px; padding: 16px; margin: 16px 0;">
+      <h4 style="margin: 0 0 8px 0; color: #004085;">🤖 Análise Automática da IA</h4>
+      <p id="ia-analise-texto" style="margin: 0; color: #333;">Analisando...</p>
+      <div id="ia-badge-container" style="margin-top: 10px;"></div>
+    </div>
+
+    <!-- Exibição do Risco Final -->
     <div id="resultado"></div>
 
     <button class="btn btn-salvar" onclick="salvar()">💾 Finalizar e Salvar Triagem</button>
@@ -116,6 +137,9 @@
   </div>
 
   <script>
+    let riscoCalculadoIA = "verde";
+    let tempoEspera = null;
+
     function carregarPacientes() {
       fetch("http://localhost:3000/pacientes")
         .then(r => {
@@ -150,7 +174,7 @@
         })
         .catch(() => {
           document.getElementById("fila-pacientes").innerHTML =
-            "<p style='color:red; text-align:center;'>Erro ao carregar pacientes. Verifique se a API (servidor) está rodando na porta 3000.</p>";
+            "<p style='color:red; text-align:center;'>Erro ao carregar pacientes. Verifique se a API está rodando na porta 3000.</p>";
         });
     }
 
@@ -182,14 +206,51 @@
       });
     }
 
-    function classificarRisco(sintoma, temperatura, saturacao) {
-      const vermelhos = ["infarto", "avc", "convulsao", "hemorragia", "falta_ar_grave"];
-      const amarelos = ["febre", "vomito", "diarreia", "falta_ar_moderada"];
-      
-      if (temperatura >= 39 || (saturacao && saturacao < 92)) return "vermelho";
-      if (vermelhos.includes(sintoma)) return "vermelho";
-      if (amarelos.includes(sintoma)) return "amarelo";
-      return "verde";
+    function analisarComIA() {
+      clearTimeout(tempoEspera);
+
+      tempoEspera = setTimeout(async () => {
+        const nome = document.getElementById("nome").value;
+        const sintoma = document.getElementById("sintoma").value;
+        const temperatura = document.getElementById("temp").value;
+        const pa = document.getElementById("pa").value;
+        const saturacao = document.getElementById("saturacao").value;
+        const fc = document.getElementById("fc").value;
+        const dor = document.getElementById("dor").value;
+        const observacao = document.getElementById("observacao").value;
+
+        const panel = document.getElementById("ia-panel");
+        const textoAnalise = document.getElementById("ia-analise-texto");
+        const badgeContainer = document.getElementById("ia-badge-container");
+
+        if (!sintoma) {
+          panel.style.display = "none";
+          return;
+        }
+
+        panel.style.display = "block";
+        textoAnalise.innerText = "⏳ Consultando IA médica...";
+        badgeContainer.innerHTML = "";
+
+        try {
+          const response = await fetch("http://localhost:3000/api/analisar-ia", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nome, sintoma, temperatura, pa, saturacao, fc, dor, observacao })
+          });
+
+          if (!response.ok) throw new Error("Falha na requisição da IA");
+
+          const dados = await response.json();
+
+          riscoCalculadoIA = dados.risco || "verde";
+          textoAnalise.innerText = dados.justificativa;
+          badgeContainer.innerHTML = `<span class="badge-risco badge-${riscoCalculadoIA}">IA Sugere: ${riscoCalculadoIA.toUpperCase()}</span>`;
+
+        } catch (err) {
+          textoAnalise.innerText = "⚠️ Não foi possível conectar ao serviço de IA no servidor.";
+        }
+      }, 800);
     }
 
     function salvar() {
@@ -208,8 +269,6 @@
         return;
       }
 
-      const risco = classificarRisco(sintoma, temperatura, saturacao);
-
       fetch("http://localhost:3000/triagem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -223,7 +282,7 @@
           dor, 
           alergia, 
           observacao, 
-          risco 
+          risco: riscoCalculadoIA 
         })
       })
       .then(r => {
@@ -232,8 +291,8 @@
       })
       .then(() => {
         const resultado = document.getElementById("resultado");
-        resultado.className = risco;
-        resultado.innerHTML = "CLASSIFICAÇÃO DE RISCO: " + risco.toUpperCase();
+        resultado.className = riscoCalculadoIA;
+        resultado.innerHTML = "CLASSIFICAÇÃO DE RISCO: " + riscoCalculadoIA.toUpperCase();
         alert("Triagem salva com sucesso!");
         carregarPacientes();
       })
@@ -242,7 +301,6 @@
       });
     }
 
-    // Executa assim que o DOM estiver completamente carregado
     document.addEventListener("DOMContentLoaded", () => {
       carregarPacientes();
       setInterval(carregarPacientes, 10000);

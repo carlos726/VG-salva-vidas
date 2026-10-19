@@ -2,7 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
-const fetch = require("node-fetch"); // Necessário para fazer requisições para a API de IA
+const fetch = require("node-fetch");
 
 const app = express();
 
@@ -79,21 +79,18 @@ app.get("/pacientes", (req, res) => {
 app.post("/triagem", (req, res) => {
   const db = readDB();
 
-  let risco = req.body.risco;
-
-  if (req.body.temperatura >= 39) {
-    risco = "vermelho";
-  } else if (req.body.temperatura >= 38) {
-    risco = "amarelo";
-  } else if (!risco) {
-    risco = "verde";
-  }
+  // Usa prioritariamente o risco enviado pela IA, se não houver, aplica padrão
+  let risco = req.body.risco || "verde";
 
   const triagem = {
     id: Date.now(),
     nome: req.body.nome,
     sintoma: req.body.sintoma,
     temperatura: req.body.temperatura,
+    pa: req.body.pa,
+    saturacao: req.body.saturacao,
+    fc: req.body.fc,
+    dor: req.body.dor,
     alergia: req.body.alergia,
     observacao: req.body.observacao,
     risco,
@@ -102,6 +99,13 @@ app.post("/triagem", (req, res) => {
   };
 
   db.triagens.push(triagem);
+
+  // Atualiza o status do paciente na fila para removê-lo da triagem pendente
+  const pacienteFila = db.pacientes.find(p => p.nome.toLowerCase() === req.body.nome.toLowerCase());
+  if (pacienteFila) {
+    pacienteFila.status = "aguardando_medico";
+  }
+
   writeDB(db);
 
   res.json(triagem);

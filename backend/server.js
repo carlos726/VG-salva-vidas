@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
+const fetch = require("node-fetch"); // Necessário para fazer requisições para a API de IA
 
 const app = express();
 
@@ -112,10 +113,54 @@ app.get("/triagens", (req, res) => {
   res.json(db.triagens);
 });
 
+// ============ ROTA DE ANÁLISE POR IA ============
+app.post("/api/analisar-ia", async (req, res) => {
+  const { nome, sintoma, temperatura, pa, saturacao, fc, dor, observacao } = req.body;
+
+  const prompt = `
+    Você é um assistente médico especialista no Protocolo de Manchester para triagem hospitalar.
+    Analise os dados clínicos do paciente e classifique o risco.
+
+    Dados do Paciente:
+    - Nome: ${nome || 'Não informado'}
+    - Sintoma Principal: ${sintoma || 'Não informado'}
+    - Temperatura: ${temperatura || 'N/A'} °C
+    - Pressão Arterial: ${pa || 'N/A'}
+    - Saturação O2: ${saturacao || 'N/A'}%
+    - Frequência Cardíaca: ${fc || 'N/A'} BPM
+    - Escala de Dor: ${dor || '0'}/10
+    - Observações: ${observacao || 'Nenhuma'}
+
+    Responda APENAS um JSON válido sem marcações markdown contendo exatamente as chaves:
+    {
+      "risco": "vermelho" | "amarelo" | "verde" | "azul",
+      "justificativa": "Resumo clínico sucinto explicando o motivo da classificação."
+    }
+  `;
+
+  try {
+    const response = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama3',
+        prompt: prompt,
+        stream: false,
+        format: 'json'
+      })
+    });
+
+    const data = await response.json();
+    const resultado = JSON.parse(data.response);
+    res.json(resultado);
+  } catch (error) {
+    console.error("Erro na comunicação com a IA:", error);
+    res.status(500).json({ error: "Erro ao comunicar com a IA do Ollama" });
+  }
+});
+
 // ============ MÍDIA INDOOR - TV ============
 
-// Função criada para enviar a chamada do paciente para a tela da TV.
-// Serve para triagem chamar o paciente no guichê e para o médico chamar no consultório.
 app.post("/tv/chamar", (req, res) => {
   const db = readDB();
 
@@ -135,8 +180,6 @@ app.post("/tv/chamar", (req, res) => {
   res.json(chamada);
 });
 
-// Função criada para consultar a chamada atual e o histórico que será exibido na TV.
-// Essa rota é usada para atualizar a tela automaticamente a cada poucos segundos.
 app.get("/tv/chamada", (req, res) => {
   const db = readDB();
   res.json({

@@ -141,7 +141,7 @@
     let tempoEspera = null;
 
     function carregarPacientes() {
-      fetch("/pacientes")
+      fetch("http://localhost:3000/pacientes")
         .then(r => {
           if (!r.ok) throw new Error("Erro na requisição");
           return r.json();
@@ -184,7 +184,7 @@
     }
 
     function chamarNaTV(nome) {
-      fetch("/tv/chamar", {
+      fetch("http://localhost:3000/tv/chamar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -233,7 +233,7 @@
         badgeContainer.innerHTML = "";
 
         try {
-          const response = await fetch("/api/analisar-ia", {
+          const response = await fetch("http://localhost:3000/api/analisar-ia", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ nome, sintoma, temperatura, pa, saturacao, fc, dor, observacao })
@@ -269,7 +269,7 @@
         return;
       }
 
-      fetch("/triagem", {
+      fetch("http://localhost:3000/triagem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

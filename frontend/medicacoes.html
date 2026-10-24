@@ -1,63 +1,842 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Médico - VG Salva Vidas</title>
+  <!-- Importação do jsPDF para gerar o PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --bg-main: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      
+      /* Cores do Manchester */
+      --vermelho-bg: #fef2f2; --vermelho-border: #fecaca; --vermelho-text: #dc2626;
+      --amarelo-bg: #fefce8; --amarelo-border: #fef08a; --amarelo-text: #ca8a04;
+      --verde-bg: #f0fdf4; --verde-border: #bbf7d0; --verde-text: #16a34a;
+      --azul-bg: #eff6ff; --azul-border: #bfdbfe; --azul-text: #2563eb;
+
+      /* Cor Internação */
+      --roxo-bg: #f3e8ff; --roxo-border: #d8b4fe; --roxo-text: #7e22ce;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Topo / Header */
+    .header-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .header-title h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Bar Configuração do Consultório */
+    .consultorio-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .consultorio-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .consultorio-info label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .consultorio-info input {
+      width: 70px;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      color: var(--primary);
+      background: #f1f5f9;
+    }
+
+    .consultorio-info input:focus {
+      border-color: var(--primary);
+      background: #fff;
+    }
+
+    .consultorio-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Seções */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Cards da Fila */
+    .triagens-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 10px;
+      gap: 8px;
+    }
+
+    .card-patient-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      word-break: break-word;
+    }
+
+    .card-body {
+      font-size: 0.875rem;
+      color: #334155;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .card-body p {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-body b {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    /* Badges de Risco */
+    .badge-risco {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-risco.vermelho, .vermelho { background: var(--vermelho-bg); border: 1px solid var(--vermelho-border); color: var(--vermelho-text); }
+    .badge-risco.amarelo, .amarelo { background: var(--amarelo-bg); border: 1px solid var(--amarelo-border); color: var(--amarelo-text); }
+    .badge-risco.verde, .verde { background: var(--verde-bg); border: 1px solid var(--verde-border); color: var(--verde-text); }
+    .badge-risco.azul, .azul { background: var(--azul-bg); border: 1px solid var(--azul-border); color: var(--azul-text); }
+
+    /* Formulario de Consulta */
+    .consulta-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    /* Mini Formulário de Chamada */
+    .mini-chamada-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .mini-chamada-box label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #166534;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .mini-chamada-actions {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      background: #fff;
+      color: var(--text-main);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    input[readonly] {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    /* Botões */
+    .btn {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background-color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+
+    .btn-success { background: #16a34a; color: #fff; flex: 1; }
+    .btn-success:hover { background: #15803d; }
+
+    .btn-pdf { background: #dc2626; color: #fff; }
+    .btn-pdf:hover { background: #b91c1c; }
+
+    .btn-internar { background: #7e22ce; color: #fff; }
+    .btn-internar:hover { background: #6b21a8; }
+
+    .btn-tv { background: #0284c7; color: #fff; }
+    .btn-tv:hover { background: #0369a1; }
+
+    .btn-outline-tv {
+      background: #f0f9ff;
+      color: #0284c7;
+      border: 1px solid #bae6fd;
+    }
+    .btn-outline-tv:hover { background: #e0f2fe; }
+
+    .form-actions {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 10px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      grid-column: 1 / -1;
+    }
+
+    /* Estilos do Modal de Formulário */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 12px;
+    }
+
+    .modal-card {
+      background: #fff;
+      width: 100%;
+      max-width: 650px;
+      max-height: 90vh;
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalFadeIn 0.2s ease;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .close-btn {
+      background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);
+    }
+
+    .modal-body {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      padding: 14px 20px;
+      background: #f8fafc;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 10px;
+    }
+
+    @media (min-width: 640px) {
+      body { padding: 32px 24px; }
+      .form-grid { grid-template-columns: 1fr 1fr; }
+      .mini-chamada-box label { width: auto; }
+      .mini-chamada-actions { width: auto; }
+      .form-actions { flex-direction: row; justify-content: flex-end; }
+      .modal-footer { flex-direction: row; justify-content: flex-end; }
+    }
+  </style>
 </head>
 
 <body>
 
 <div class="container">
 
-  <h2>💊 Medicações Prescritas</h2>
+  <!-- Cabeçalho -->
+  <div class="header-panel">
+    <div class="header-title">
+      <h2>🩺 Painel de Atendimento Médico</h2>
+    </div>
+    <button class="btn btn-outline-tv" style="padding: 10px 16px;" onclick="window.open('tv.html','_blank')">
+      📺 Abrir Tela da TV
+    </button>
+  </div>
 
-  <!-- IMPLEMENTADO: local onde a lista de medicações será exibida -->
-  <div id="listaMedicacoes"></div>
+  <!-- Identificador do Consultório -->
+  <div class="consultorio-bar">
+    <div class="consultorio-info">
+      <label for="consultorio-num">Meu Consultório:</label>
+      <input type="text" id="consultorio-num" value="01">
+    </div>
+    <span class="consultorio-desc">Esta numeração será direcionada ao painel da TV ao chamar o paciente.</span>
+  </div>
+
+  <!-- Fila de Triagem -->
+  <div>
+    <div class="section-title">📋 Pacientes na Fila de Espera</div>
+    <div id="triagens" class="triagens-grid"></div>
+  </div>
+
+  <!-- Formulário de Prontuário/Consulta -->
+  <div>
+    <div class="section-title">📝 Registro de Consulta</div>
+    <div class="consulta-form">
+      
+      <!-- Mini Formulário de Chamada Rápida -->
+      <div class="mini-chamada-box">
+        <label>🔊 Chamada Rápida:</label>
+        <select id="select-chamada" style="flex: 1; background: #fff; min-width: 200px;">
+          <option value="">Selecione o paciente da fila para chamar...</option>
+        </select>
+        <div class="mini-chamada-actions">
+          <button class="btn btn-tv" style="flex: 1;" onclick="chamarPacienteMiniForm()">📺 Chamar</button>
+          <button class="btn btn-pdf" style="flex: 1;" onclick="darAltaMiniForm()">📄 Dar Alta</button>
+          <button class="btn btn-internar" style="flex: 1;" onclick="internarMiniForm()">🏥 Internar</button>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Paciente Selecionado</label>
+          <input id="paciente" placeholder="Clique em 'Atender' ou selecione acima" readonly>
+        </div>
+        <div class="form-group">
+          <label>Medicação Prescrita</label>
+          <select id="medicacao">
+            <option value="">Selecione a medicação</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Campos de Quarto e Leito adicionados -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="quarto">Quarto / Ala</label>
+          <input id="quarto" placeholder="Ex: Quarto 102 ou Ala B">
+        </div>
+        <div class="form-group">
+          <label for="leito">Número do Leito</label>
+          <input id="leito" placeholder="Ex: Leito 03">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Diagnóstico</label>
+        <input id="diagnostico" placeholder="Informe o diagnóstico do paciente">
+      </div>
+
+      <div class="form-group">
+        <label>Observações Clínicas</label>
+        <textarea id="obs" placeholder="Observações clínicas adicionais, conduta ou orientações..."></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-pdf" style="padding: 12px 18px;" onclick="abrirModalAlta()">📄 Dar Alta ao Paciente</button>
+        <button class="btn btn-internar" style="padding: 12px 18px;" onclick="redirecionarParaInternacao()">🏥 Encaminhar p/ Internação</button>
+        <button class="btn btn-primary" style="padding: 12px 24px;" onclick="salvar()">Finalizar e Salvar Consulta</button>
+      </div>
+    </div>
+  </div>
 
 </div>
 
-<script>
+<!-- Modal de Formulário de Alta Médica -->
+<div id="modalAlta" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>📄 Formulário de Alta Médica</h3>
+      <button class="close-btn" onclick="fecharModalAlta()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nome do Paciente</label>
+        <input id="alta-paciente" readonly style="background: #f1f5f9; font-weight: bold;">
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Tipo de Alta</label>
+          <select id="alta-tipo">
+            <option value="Alta Médica Curada/Melhorada">Alta Médica (Melhorado)</option>
+            <option value="Alta a Pedido">Alta a Pedido</option>
+            <option value="Encaminhamento / Transferência">Encaminhamento / Transferência</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Diagnóstico Final / CID</label>
+          <input id="alta-diagnostico" placeholder="Diagnóstico de saída">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Prescrição de Saída / Medicação Recomendada</label>
+        <textarea id="alta-medicacao" style="min-height: 70px;" placeholder="Medicamentos para uso domiciliar..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Orientações de Alta e Cuidados Domiciliares</label>
+        <textarea id="alta-obs" style="min-height: 90px;" placeholder="Recomendações de repouso, dieta, retorno ou sinais de alerta..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="background: #e2e8f0; color: var(--text-main);" onclick="fecharModalAlta()">Cancelar</button>
+      <button class="btn btn-pdf" style="padding: 10px 18px;" onclick="confirmarEBaixarPDFAlta()">📄 Confirmar Alta e Gerar PDF</button>
+    </div>
+  </div>
+</div>
 
-// IMPLEMENTADO: busca as consultas salvas e mostra as medicações
-function carregarMedicacoesPrescritas() {
-  fetch("/medicacoes")
+<script>
+let triagensCarregadas = [];
+
+function carregar() {
+  fetch("/triagens")
     .then(r => r.json())
     .then(data => {
-      const div = document.getElementById("listaMedicacoes");
-
+      triagensCarregadas = data;
+      const div = document.getElementById("triagens");
+      const selectChamada = document.getElementById("select-chamada");
+      
       div.innerHTML = "";
+      selectChamada.innerHTML = `<option value="">Selecione o paciente da fila para chamar...</option>`;
 
       if (data.length === 0) {
-        div.innerHTML = "<p>Nenhuma medicação prescrita.</p>";
+        div.innerHTML = `<div class="empty-state">Nenhum paciente aguardando atendimento no momento.</div>`;
         return;
       }
 
-      data.forEach(c => {
+      data.forEach((t, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = `${t.nome} (Risco: ${t.risco || 'Verde'})`;
+        selectChamada.appendChild(opt);
+
+        const riscoClass = (t.risco || 'verde').toLowerCase();
         div.innerHTML += `
           <div class="card">
-            <h3>${c.paciente}</h3>
-
-            <p>
-              <b>Medicação:</b>
-              ${c.medicacao}
-            </p>
-
-            <p>
-              <b>Diagnóstico:</b>
-              ${c.diagnostico}
-            </p>
-
-            <p>
-              <b>Observações:</b>
-              ${c.obs || "Nenhuma"}
-            </p>
+            <div class="card-header">
+              <span class="card-patient-name">${t.nome}</span>
+              <span class="badge-risco ${riscoClass}">${t.risco || "Verde"}</span>
+            </div>
+            <div class="card-body">
+              <p><b>Sintoma:</b> <span>${t.sintoma || "Não informado"}</span></p>
+              <p><b>Temperatura:</b> <span>${t.temperatura ? t.temperatura + "°C" : "N/I"}</span></p>
+              <p><b>Alergia:</b> <span>${t.alergia || "Nenhuma"}</span></p>
+              <p><b>Obs:</b> <span>${t.observacao || "Nenhuma"}</span></p>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-success" onclick="selecionar(${index})">Atender</button>
+              <button class="btn btn-tv" onclick="chamarNaTV('${t.nome}')">📺 Chamar</button>
+              <button class="btn btn-pdf" onclick="darAlta(${index})">📄 Alta</button>
+              <button class="btn btn-internar" onclick="internar(${index})">🏥 Internar</button>
+            </div>
           </div>
         `;
+      });
+    })
+    .catch(() => {
+      document.getElementById("triagens").innerHTML = 
+        `<div class="empty-state" style="color: #dc2626;">Erro ao carregar a lista de triagem.</div>`;
+    });
+}
+
+function chamarNaTV(nome) {
+  const consultorio = document.getElementById("consultorio-num").value || "01";
+  fetch("/tv/chamar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      localTipo: "CONSULTÓRIO",
+      localNumero: consultorio,
+      paciente: nome
+    })
+  })
+  .then(r => r.json())
+  .then(() => {
+    alert("✅ " + nome + " foi chamado na TV para o Consultório " + consultorio + "!");
+  });
+}
+
+function darAlta(index) {
+  selecionar(index);
+  abrirModalAlta();
+}
+
+function internar(index) {
+  selecionar(index);
+  redirecionarParaInternacao();
+}
+
+function chamarPacienteMiniForm() {
+  const select = document.getElementById("select-chamada");
+  const index = select.value;
+  if (index === "") {
+    alert("Selecione um paciente na lista de chamada rápida.");
+    return;
+  }
+  const t = triagensCarregadas[index];
+  if (t) {
+    chamarNaTV(t.nome);
+  }
+}
+
+function darAltaMiniForm() {
+  const select = document.getElementById("select-chamada");
+  const index = select.value;
+  if (index === "") {
+    alert("Selecione um paciente na lista para dar alta.");
+    return;
+  }
+  darAlta(index);
+}
+
+function internarMiniForm() {
+  const select = document.getElementById("select-chamada");
+  const index = select.value;
+  if (index === "") {
+    alert("Selecione um paciente na lista para internar.");
+    return;
+  }
+  internar(index);
+}
+
+function selecionar(index) {
+  const t = triagensCarregadas[index];
+  document.getElementById("paciente").value = t.nome;
+  document.getElementById("obs").value = t.observacao || "";
+
+  document.getElementById("select-chamada").value = index;
+
+  if (t.alergia && t.alergia !== "Nenhuma") {
+    alert("⚠️ ALERTA DE ALERGIA: " + t.alergia);
+  }
+}
+
+function carregarMedicacoes() {
+  fetch("/lista-medicacoes")
+    .then(r => r.json())
+    .then(data => {
+      const select = document.getElementById("medicacao");
+      select.innerHTML = `<option value="">Selecione a medicação</option>`;
+      data.forEach(med => {
+        const option = document.createElement("option");
+        option.value = med;
+        option.textContent = med;
+        select.appendChild(option);
       });
     });
 }
 
-carregarMedicacoesPrescritas();
+/* Redirecionamento e Salvamento de Internação no localStorage */
+function redirecionarParaInternacao() {
+  const paciente = document.getElementById("paciente").value;
+  if (!paciente) {
+    alert("Selecione um paciente para solicitar a internação.");
+    return;
+  }
+  
+  const diagnostico = document.getElementById("diagnostico").value || "Encaminhado do Consultório";
+  const obs = document.getElementById("obs").value || "Sem observações adicionais";
+  const quarto = document.getElementById("quarto").value || "Não informado";
+  const leito = document.getElementById("leito").value || "Não informado";
 
+  // Objeto do paciente internado
+  const novoInternado = {
+    id: Date.now(),
+    paciente: paciente,
+    diagnostico: diagnostico,
+    obs: obs,
+    quarto: quarto,
+    leito: leito,
+    dataHora: new Date().toLocaleString("pt-BR"),
+    status: "Internado"
+  };
+
+  // Salva no localStorage para sincronizar com a página internacao.html
+  let listaInternados = JSON.parse(localStorage.getItem("listaInternados")) || [];
+  listaInternados.push(novoInternado);
+  localStorage.setItem("listaInternados", JSON.stringify(listaInternados));
+
+  // Limpa os campos após encaminhar
+  document.getElementById("quarto").value = "";
+  document.getElementById("leito").value = "";
+
+  // Abre a janela de internação
+  window.open("internacao.html", "_blank");
+}
+
+/* Modal de Alta */
+function abrirModalAlta() {
+  const paciente = document.getElementById("paciente").value;
+  if (!paciente) {
+    alert("Selecione um paciente para dar a alta.");
+    return;
+  }
+
+  document.getElementById("alta-paciente").value = paciente;
+  document.getElementById("alta-diagnostico").value = document.getElementById("diagnostico").value;
+  document.getElementById("alta-medicacao").value = document.getElementById("medicacao").value;
+  document.getElementById("alta-obs").value = document.getElementById("obs").value;
+
+  document.getElementById("modalAlta").style.display = "flex";
+}
+
+function fecharModalAlta() {
+  document.getElementById("modalAlta").style.display = "none";
+}
+
+function confirmarEBaixarPDFAlta() {
+  const paciente = document.getElementById("alta-paciente").value;
+  const tipoAlta = document.getElementById("alta-tipo").value;
+  const diagnostico = document.getElementById("alta-diagnostico").value || "Não informado";
+  const medicacao = document.getElementById("alta-medicacao").value || "Nenhuma medicação prescrita";
+  const obs = document.getElementById("alta-obs").value || "Sem observações adicionais.";
+  const consultorio = document.getElementById("consultorio-num").value || "01";
+  const dataHoje = new Date().toLocaleDateString('pt-BR');
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("VG SALVA VIDAS - TERMO DE ALTA MÉDICA", 105, 20, { align: "center" });
+  
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Consultório: ${consultorio} | Data: ${dataHoje}`, 105, 28, { align: "center" });
+  
+  doc.setLineWidth(0.5);
+  doc.line(20, 35, 190, 35);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Dados do Paciente:", 20, 45);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Nome: ${paciente}`, 20, 53);
+  doc.text(`Situação: ${tipoAlta}`, 20, 60);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Diagnóstico:", 20, 75);
+  doc.setFont("helvetica", "normal");
+  doc.text(diagnostico, 20, 83, { maxWidth: 170 });
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Medicação Prescrita para Casa / Conduta:", 20, 103);
+  doc.setFont("helvetica", "normal");
+  doc.text(medicacao, 20, 111, { maxWidth: 170 });
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Orientações Médicas e Cuidados:", 20, 131);
+  doc.setFont("helvetica", "normal");
+  doc.text(obs, 20, 139, { maxWidth: 170 });
+
+  doc.line(60, 200, 150, 200);
+  doc.setFontSize(10);
+  doc.text("Assinatura e Carimbo do Médico(a)", 105, 206, { align: "center" });
+
+  doc.save(`Alta_Medica_${paciente.replace(/\s+/g, '_')}.pdf`);
+  fecharModalAlta();
+}
+
+function salvar() {
+  const paciente = document.getElementById("paciente").value;
+  const diagnostico = document.getElementById("diagnostico").value;
+  const medicacao = document.getElementById("medicacao").value;
+  const obs = document.getElementById("obs").value;
+
+  if (!paciente) { alert("Selecione um paciente clicando em Atender."); return; }
+  if (!medicacao) { alert("Selecione uma medicação."); return; }
+
+  fetch("/consulta", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paciente, diagnostico, medicacao, obs })
+  })
+  .then(r => r.json())
+  .then(() => {
+    alert("Consulta salva com sucesso!");
+    document.getElementById("paciente").value = "";
+    document.getElementById("diagnostico").value = "";
+    document.getElementById("medicacao").value = "";
+    document.getElementById("obs").value = "";
+    carregar();
+  });
+}
+
+carregar();
+carregarMedicacoes();
+setInterval(carregar, 10000);
 </script>
 
 </body>

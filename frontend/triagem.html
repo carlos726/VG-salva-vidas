@@ -293,6 +293,19 @@
         const resultado = document.getElementById("resultado");
         resultado.innerHTML = `✅ Triagem salva com sucesso! Risco classificado: <span class="badge-risco badge-${riscoCalculadoIA}">${riscoCalculadoIA.toUpperCase()}</span>`;
         alert("Triagem salva com sucesso!");
+        
+        // Limpa o formulário após salvar
+        document.getElementById("nome").value = "";
+        document.getElementById("temp").value = "";
+        document.getElementById("pa").value = "";
+        document.getElementById("saturacao").value = "";
+        document.getElementById("fc").value = "";
+        document.getElementById("sintoma").value = "";
+        document.getElementById("dor").value = "0";
+        document.getElementById("alergia").value = "";
+        document.getElementById("observacao").value = "";
+        document.getElementById("ia-panel").style.display = "none";
+
         carregarPacientes();
       })
       .catch(err => {

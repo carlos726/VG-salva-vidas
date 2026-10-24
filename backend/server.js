@@ -2,84 +2,106 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
-const fetch = require("node-fetch"); // Necessário para fazer requisições para a API de IA
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 
+// Servir os arquivos estáticos do front-end
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 const DB_FILE = path.join(__dirname, "db.json");
 
+// Função auxiliar para ler o banco de dados com tratamento de erros
 function readDB() {
+  const defaultDB = {
+    usuarios: [],
+    pacientes: [],
+    triagens: [],
+    consultas: [],
+    tv_chamada: null,
+    tv_historico: []
+  };
+
   if (!fs.existsSync(DB_FILE)) {
-    return {
-      usuarios: [],
-      pacientes: [],
-      triagens: [],
-      consultas: [],
-      tv_chamada: null,
-      tv_historico: []
-    };
+    writeDB(defaultDB);
+    return defaultDB;
   }
-  const db = JSON.parse(fs.readFileSync(DB_FILE));
-  if (!db.tv_chamada) db.tv_chamada = null;
-  if (!db.tv_historico) db.tv_historico = [];
-  return db;
+
+  try {
+    const fileContent = fs.readFileSync(DB_FILE, "utf-8");
+    const db = JSON.parse(fileContent);
+
+    // Garante que todas as propriedades existam
+    if (!db.usuarios) db.usuarios = [];
+    if (!db.pacientes) db.pacientes = [];
+    if (!db.triagens) db.triagens = [];
+    if (!db.consultas) db.consultas = [];
+    if (!db.tv_chamada) db.tv_chamada = null;
+    if (!db.tv_historico) db.tv_historico = [];
+
+    return db;
+  } catch (error) {
+    console.error("Erro ao ler db.json, reiniciando estrutura:", error);
+    writeDB(defaultDB);
+    return defaultDB;
+  }
 }
 
+// Função auxiliar para salvar o banco de dados
 function writeDB(data) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch (error) {
+    console.error("Erro ao escrever no db.json:", error);
+  }
 }
 
-// LOGIN
+// ============ ROTA DE LOGIN ============
 app.post("/login", (req, res) => {
+  const { usuario, senha } = req.body;
   const db = readDB();
 
-  const user = db.usuarios.find(u =>
-    u.usuario === req.body.usuario &&
-    u.senha === req.body.senha
+  const user = db.usuarios.find(
+    (u) => u.usuario === usuario && u.senha === senha
   );
 
   if (!user) {
-    return res.status(401).json({ erro: "Login inválido" });
+    return res.status(401).json({ erro: "Login ou senha inválidos" });
   }
 
   res.json(user);
 });
 
-// ATENDIMENTO - cadastrar paciente
+// ============ RECEPTIVO / ATENDIMENTO ============
 app.post("/atendimento", (req, res) => {
   const db = readDB();
 
   const paciente = {
     id: Date.now(),
     nome: req.body.nome,
-    cpf: req.body.documento, // Ajustado para corresponder ao campo do front-end de atendimento
-    tipo: req.body.tipo,
+    cpf: req.body.documento,
+    tipo: req.body.tipo || "Normal",
     status: "triagem",
-    createdAt: new Date()
+    createdAt: new Date().toISOString()
   };
 
   db.pacientes.push(paciente);
   writeDB(db);
 
-  res.json(paciente);
+  res.status(201).json(paciente);
 });
 
-// LISTAR PACIENTES (triagem busca quem foi cadastrado no atendimento)
 app.get("/pacientes", (req, res) => {
   const db = readDB();
   res.json(db.pacientes);
 });
 
-// TRIAGEM (Corrigido para aceitar e priorizar a classificação vinda da IA)
+// ============ TRIAGEM DE PACIENTES ============
 app.post("/triagem", (req, res) => {
   const db = readDB();
 
-  // Utiliza prioritariamente o risco enviado pela triagem (calculado via IA), se não houver, assume verde
   const risco = req.body.risco || "verde";
 
   const triagem = {
@@ -95,29 +117,29 @@ app.post("/triagem", (req, res) => {
     observacao: req.body.observacao,
     risco,
     status: "aguardando_medico",
-    createdAt: new Date()
+    createdAt: new Date().toISOString()
   };
 
   db.triagens.push(triagem);
 
-  // Atualiza o status do paciente na lista de pacientes para removê-lo da fila de triagem pendente
-  const pacienteFila = db.pacientes.find(p => p.nome && p.nome.toLowerCase() === req.body.nome.toLowerCase());
+  // Atualiza status na fila de pacientes
+  const pacienteFila = db.pacientes.find(
+    (p) => p.nome && p.nome.toLowerCase() === req.body.nome.toLowerCase()
+  );
   if (pacienteFila) {
     pacienteFila.status = "aguardando_medico";
   }
 
   writeDB(db);
-
-  res.json(triagem);
+  res.status(201).json(triagem);
 });
 
-// LISTAR TRIAGENS
 app.get("/triagens", (req, res) => {
   const db = readDB();
   res.json(db.triagens);
 });
 
-// ============ ROTA DE ANÁLISE POR IA ============
+// ============ ANÁLISE CLINICA VIA IA (OLLAMA) ============
 app.post("/api/analisar-ia", async (req, res) => {
   const { nome, sintoma, temperatura, pa, saturacao, fc, dor, observacao } = req.body;
 
@@ -143,28 +165,35 @@ app.post("/api/analisar-ia", async (req, res) => {
   `;
 
   try {
-    const response = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: 'llama3',
+        model: "llama3",
         prompt: prompt,
         stream: false,
-        format: 'json'
+        format: "json"
       })
     });
 
+    if (!response.ok) {
+      throw new Error(`Erro no servidor Ollama: ${response.statusText}`);
+    }
+
     const data = await response.json();
     const resultado = JSON.parse(data.response);
+    
     res.json(resultado);
   } catch (error) {
     console.error("Erro na comunicação com a IA:", error);
-    res.status(500).json({ error: "Erro ao comunicar com a IA do Ollama" });
+    res.status(500).json({ 
+      error: "Erro ao comunicar com a IA do Ollama",
+      detalhes: error.message 
+    });
   }
 });
 
-// ============ MÍDIA INDOOR - TV ============
-
+// ============ SISTEMA DE CHAMADA PARA TV (MÍDIA INDOOR) ============
 app.post("/tv/chamar", (req, res) => {
   const db = readDB();
 
@@ -192,7 +221,7 @@ app.get("/tv/chamada", (req, res) => {
   });
 });
 
-// LISTA DE MEDICAÇÕES
+// ============ CONSULTA & MEDICAÇÃO ============
 app.get("/lista-medicacoes", (req, res) => {
   res.json([
     "Dipirona",
@@ -204,11 +233,10 @@ app.get("/lista-medicacoes", (req, res) => {
     "Omeprazol",
     "Buscopan",
     "Dramin",
-    "Soro fisiológico"
+    "Soro Fisiológico"
   ]);
 });
 
-// CONSULTA
 app.post("/consulta", (req, res) => {
   const db = readDB();
 
@@ -218,22 +246,28 @@ app.post("/consulta", (req, res) => {
     diagnostico: req.body.diagnostico,
     medicacao: req.body.medicacao,
     obs: req.body.obs,
-    createdAt: new Date()
+    createdAt: new Date().toISOString()
   };
 
   db.consultas.push(consulta);
-  writeDB(db);
 
-  res.json(consulta);
+  // Atualiza status do paciente para finalizado/alta
+  const paciente = db.pacientes.find(p => p.nome && p.nome.toLowerCase() === req.body.paciente.toLowerCase());
+  if (paciente) {
+    paciente.status = "alta";
+  }
+
+  writeDB(db);
+  res.status(201).json(consulta);
 });
 
-// MEDICAÇÕES
 app.get("/medicacoes", (req, res) => {
   const db = readDB();
   res.json(db.consultas);
 });
 
-// START
-app.listen(3000, () => {
-  console.log("🏥 Hospital Pro rodando em http://localhost:3000");
+// ============ INICIALIZAÇÃO DO SERVIDOR ============
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🏥 Hospital Pro rodando na porta ${PORT}: http://localhost:${PORT}`);
 });

@@ -86,7 +86,7 @@ app.post("/atendimento", (req, res) => {
   res.json(paciente);
 });
 
-// LISTAR PACIENTES
+// LISTAR PACIENTES (triagem busca quem foi cadastrado no atendimento)
 app.get("/pacientes", (req, res) => {
   const db = readDB();
   res.json(db.pacientes);
@@ -95,6 +95,8 @@ app.get("/pacientes", (req, res) => {
 // TRIAGEM
 app.post("/triagem", (req, res) => {
   const db = readDB();
+
+  // Usa prioritariamente o risco enviado pela IA, se não houver, aplica padrão
   let risco = req.body.risco || "verde";
 
   const triagem = {
@@ -115,12 +117,14 @@ app.post("/triagem", (req, res) => {
 
   db.triagens.push(triagem);
 
-  const pacienteFila = db.pacientes.find(p => p.nome && p.nome.toLowerCase() === req.body.nome.toLowerCase());
+  // Atualiza o status do paciente na fila de forma segura (evita crash se houver paciente sem nome)
+  const pacienteFila = db.pacientes.find(p => p.nome && req.body.nome && p.nome.toLowerCase() === req.body.nome.toLowerCase());
   if (pacienteFila) {
     pacienteFila.status = "aguardando_medico";
   }
 
   writeDB(db);
+
   res.json(triagem);
 });
 
@@ -174,10 +178,10 @@ app.post("/api/analisar-ia", async (req, res) => {
     res.json(resultado);
   } catch (error) {
     console.warn("Aviso: Ollama offline no ambiente de nuvem. Usando fallback padrão.");
-    // Fallback caso o Ollama não esteja rodando no servidor em nuvem (Render)
+    // Fallback seguro caso rode no Render sem o Ollama local
     res.json({
       risco: "verde",
-      justificativa: "Classificação padrão aplicada (Servidor de IA local desconectado no Render)."
+      justificativa: "Classificação padrão aplicada (Servidor de IA local desconectado)."
     });
   }
 });
@@ -251,7 +255,7 @@ app.get("/medicacoes", (req, res) => {
   res.json(db.consultas);
 });
 
-// START - Dinâmico para aceitar a porta do Render e fallback para 3000 localmente
+// START (Porta dinâmica para o Render + fallback para 3000 localmente)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🏥 Hospital Pro rodando na porta ${PORT}`);

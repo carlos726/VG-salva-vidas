@@ -1,7 +1,7 @@
 {
   "usuarios": [
     {
-      "usuario": "triagem",
+      "usuario": "admin",
       "senha": "123",
       "tipo": "triagem"
     },
@@ -548,7 +548,7 @@
       "hora": "11:16"
     },
     {
-      "id": "1789396372006",
+      "id": 1789396372006,
       "localTipo": "CONSULTÓRIO",
       "localNumero": "01",
       "paciente": "testee444",

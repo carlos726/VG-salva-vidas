@@ -2,59 +2,42 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
+const fetch = require("node-fetch"); // Necessário para fazer requisições para a API de IA
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 
-// Servir os arquivos estáticos do front-end
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 const DB_FILE = path.join(__dirname, "db.json");
 
 function readDB() {
-  const defaultDB = {
-    usuarios: [],
-    pacientes: [],
-    triagens: [],
-    consultas: [],
-    tv_chamada: null,
-    tv_historico: []
-  };
-
   if (!fs.existsSync(DB_FILE)) {
-    writeDB(defaultDB);
-    return defaultDB;
+    return {
+      usuarios: [],
+      pacientes: [],
+      triagens: [],
+      consultas: [],
+      tv_chamada: null,
+      tv_historico: []
+    };
   }
-
-  try {
-    const db = JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
-    if (!db.usuarios) db.usuarios = [];
-    if (!db.pacientes) db.pacientes = [];
-    if (!db.triagens) db.triagens = [];
-    if (!db.consultas) db.consultas = [];
-    if (!db.tv_chamada) db.tv_chamada = null;
-    if (!db.tv_historico) db.tv_historico = [];
-    return db;
-  } catch (error) {
-    console.error("Erro ao ler db.json, recriando estrutura:", error);
-    writeDB(defaultDB);
-    return defaultDB;
-  }
+  const db = JSON.parse(fs.readFileSync(DB_FILE));
+  if (!db.tv_chamada) db.tv_chamada = null;
+  if (!db.tv_historico) db.tv_historico = [];
+  return db;
 }
 
 function writeDB(data) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Erro ao escrever no db.json:", error);
-  }
+  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
 // LOGIN
 app.post("/login", (req, res) => {
   const db = readDB();
+
   const user = db.usuarios.find(u =>
     u.usuario === req.body.usuario &&
     u.senha === req.body.senha
@@ -77,7 +60,7 @@ app.post("/atendimento", (req, res) => {
     cpf: req.body.cpf,
     tipo: req.body.tipo,
     status: "triagem",
-    createdAt: new Date().toISOString()
+    createdAt: new Date()
   };
 
   db.pacientes.push(paciente);
@@ -96,33 +79,29 @@ app.get("/pacientes", (req, res) => {
 app.post("/triagem", (req, res) => {
   const db = readDB();
 
-  // Usa prioritariamente o risco enviado pela IA, se não houver, aplica padrão
-  let risco = req.body.risco || "verde";
+  let risco = req.body.risco;
+
+  if (req.body.temperatura >= 39) {
+    risco = "vermelho";
+  } else if (req.body.temperatura >= 38) {
+    risco = "amarelo";
+  } else if (!risco) {
+    risco = "verde";
+  }
 
   const triagem = {
     id: Date.now(),
     nome: req.body.nome,
     sintoma: req.body.sintoma,
     temperatura: req.body.temperatura,
-    pa: req.body.pa,
-    saturacao: req.body.saturacao,
-    fc: req.body.fc,
-    dor: req.body.dor,
     alergia: req.body.alergia,
     observacao: req.body.observacao,
     risco,
     status: "aguardando_medico",
-    createdAt: new Date().toISOString()
+    createdAt: new Date()
   };
 
   db.triagens.push(triagem);
-
-  // Atualiza o status do paciente na fila de forma segura (evita crash se houver paciente sem nome)
-  const pacienteFila = db.pacientes.find(p => p.nome && req.body.nome && p.nome.toLowerCase() === req.body.nome.toLowerCase());
-  if (pacienteFila) {
-    pacienteFila.status = "aguardando_medico";
-  }
-
   writeDB(db);
 
   res.json(triagem);
@@ -171,22 +150,17 @@ app.post("/api/analisar-ia", async (req, res) => {
       })
     });
 
-    if (!response.ok) throw new Error("Ollama indisponível");
-
     const data = await response.json();
     const resultado = JSON.parse(data.response);
     res.json(resultado);
   } catch (error) {
-    console.warn("Aviso: Ollama offline no ambiente de nuvem. Usando fallback padrão.");
-    // Fallback seguro caso rode no Render sem o Ollama local
-    res.json({
-      risco: "verde",
-      justificativa: "Classificação padrão aplicada (Servidor de IA local desconectado)."
-    });
+    console.error("Erro na comunicação com a IA:", error);
+    res.status(500).json({ error: "Erro ao comunicar com a IA do Ollama" });
   }
 });
 
 // ============ MÍDIA INDOOR - TV ============
+
 app.post("/tv/chamar", (req, res) => {
   const db = readDB();
 
@@ -240,7 +214,7 @@ app.post("/consulta", (req, res) => {
     diagnostico: req.body.diagnostico,
     medicacao: req.body.medicacao,
     obs: req.body.obs,
-    createdAt: new Date().toISOString()
+    createdAt: new Date()
   };
 
   db.consultas.push(consulta);
@@ -255,8 +229,7 @@ app.get("/medicacoes", (req, res) => {
   res.json(db.consultas);
 });
 
-// START (Porta dinâmica para o Render + fallback para 3000 localmente)
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🏥 Hospital Pro rodando na porta ${PORT}`);
+// START
+app.listen(3000, () => {
+  console.log("🏥 Hospital Pro rodando em http://localhost:3000");
 });

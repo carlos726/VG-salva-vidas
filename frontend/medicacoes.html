@@ -1,309 +1,179 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Triagem - VG Salva Vidas</title>
-  <link rel="stylesheet" href="css/2style.css">
-  <style>
-    .badge-risco {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-weight: bold;
-      color: #fff;
-      text-transform: uppercase;
-      margin-top: 8px;
-    }
-    .badge-vermelho { background-color: #dc3545; }
-    .badge-amarelo { background-color: #ffc107; color: #333; }
-    .badge-verde { background-color: #28a745; }
-    .badge-azul { background-color: #17a2b8; }
-  </style>
-</head>
+<script>
+// Busca e renderiza as medicações prescritas
+function carregarMedicacoesPrescritas() {
+  const div = document.getElementById("listaMedicacoes");
+  if (!div) return;
 
-<body>
-  <div class="container">
+  fetch("/medicacoes", {
+    headers: { "Accept": "application/json" }
+  })
+    .then(r => {
+      if (!r.ok) throw new Error("Falha na requisição");
+      return r.json();
+    })
+    .then(data => {
+      div.innerHTML = "";
 
-    <!-- Cabeçalho -->
-    <div class="header-container">
-      <h2>🏥 Triagem Hospitalar</h2>
-      <button class="btn btn-abrir-tv" onclick="window.open('tv.html','_blank')">📺 Abrir Tela da TV</button>
-    </div>
-
-    <!-- Fila de Pacientes -->
-    <div class="pacientes-fila">
-      <h3>
-        Pacientes Cadastrados no Atendimento
-        <span>Selecione para triagem ou chame na TV</span>
-      </h3>
-      
-      <div id="fila-pacientes">
-        <p style="color:var(--text-muted); text-align:center;">Carregando...</p>
-      </div>
-
-      <button class="btn btn-refresh" onclick="carregarPacientes()">🔄 Atualizar lista</button>
-    </div>
-
-    <hr>
-
-    <!-- Formulário Avançado de Triagem -->
-    <h3 class="form-section-title">📋 Formulário Avançado de Triagem</h3>
-    
-    <div class="form-group" style="margin-bottom: 16px;">
-      <label for="nome">Nome Completo do Paciente *</label>
-      <input id="nome" type="text" placeholder="Ex: João da Silva" required>
-    </div>
-
-    <!-- Grid de Sinais Vitais -->
-    <div class="grid-vitais">
-      <div class="form-group">
-        <label for="temp">Temperatura (°C)</label>
-        <input id="temp" type="number" step="0.1" placeholder="Ex: 36.5" oninput="analisarComIA()">
-      </div>
-
-      <div class="form-group">
-        <label for="pa">Pressão Arterial (PA)</label>
-        <input id="pa" type="text" placeholder="Ex: 120/80" oninput="analisarComIA()">
-      </div>
-
-      <div class="form-group">
-        <label for="saturacao">Saturação O₂ (%)</label>
-        <input id="saturacao" type="number" placeholder="Ex: 98" oninput="analisarComIA()">
-      </div>
-
-      <div class="form-group">
-        <label for="fc">Freq. Cardíaca (BPM)</label>
-        <input id="fc" type="number" placeholder="Ex: 80" oninput="analisarComIA()">
-      </div>
-    </div>
-
-    <!-- Queixa e Escala de Dor -->
-    <div class="grid-vitais">
-      <div class="form-group">
-        <label for="sintoma">Sintoma Principal *</label>
-        <select id="sintoma" required onchange="analisarComIA()">
-          <option value="">Selecione o sintoma</option>
-          <option value="dor_leve">Dor leve</option>
-          <option value="resfriado">Resfriado</option>
-          <option value="coriza">Coriza</option>
-          <option value="tosse">Tosse</option>
-          <option value="febre">Febre</option>
-          <option value="vomito">Vômito</option>
-          <option value="diarreia">Diarreia</option>
-          <option value="falta_ar_moderada">Falta de ar moderada</option>
-          <option value="falta_ar_grave">Falta de ar grave</option>
-          <option value="infarto">Suspeita de infarto</option>
-          <option value="avc">Suspeita de AVC</option>
-          <option value="convulsao">Convulsão</option>
-          <option value="hemorragia">Hemorragia</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="dor">Escala de Dor (0 a 10)</label>
-        <select id="dor" onchange="analisarComIA()">
-          <option value="0">0 - Sem Dor</option>
-          <option value="2">1-3 Leve</option>
-          <option value="5">4-6 Moderada</option>
-          <option value="8">7-9 Intensa</option>
-          <option value="10">10 - Insuportável</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-group" style="margin-bottom: 16px;">
-      <label for="alergia">Alergias Conhecidas</label>
-      <input id="alergia" type="text" placeholder="Ex: Penicilina, Dipirona, Nenhuma">
-    </div>
-
-    <div class="form-group">
-      <label for="observacao">Observações Clínicas e Histórico</label>
-      <textarea id="observacao" placeholder="Detalhe outros sintomas, comorbidades ou medicamentos em uso..." oninput="analisarComIA()"></textarea>
-    </div>
-
-    <!-- Painel de Exibição da IA -->
-    <div id="ia-panel" style="display: none; background: #f0f7ff; border: 1px solid #b8daff; border-radius: 8px; padding: 16px; margin: 16px 0;">
-      <h4 style="margin: 0 0 8px 0; color: #004085;">🤖 Análise Automática da IA</h4>
-      <p id="ia-analise-texto" style="margin: 0; color: #333;">Analisando...</p>
-      <div id="ia-badge-container" style="margin-top: 10px;"></div>
-    </div>
-
-    <!-- Exibição do Risco Final -->
-    <div id="resultado" style="margin-bottom: 16px; font-weight: bold;"></div>
-
-    <button class="btn btn-salvar" onclick="salvar()">💾 Finalizar e Salvar Triagem</button>
-
-  </div>
-
-  <script>
-    let riscoCalculadoIA = "verde";
-    let tempoEspera = null;
-
-    function carregarPacientes() {
-      fetch("http://localhost:3000/pacientes")
-        .then(r => {
-          if (!r.ok) throw new Error("Erro na requisição");
-          return r.json();
-        })
-        .then(pacientes => {
-          const div = document.getElementById("fila-pacientes");
-          const fila = pacientes.filter(p => p.status === "triagem" || !p.status);
-
-          if (fila.length === 0) {
-            div.innerHTML = "<p style='color:var(--text-muted); text-align:center;'>Nenhum paciente aguardando.</p>";
-            return;
-          }
-
-          div.innerHTML = "";
-          fila.forEach(p => {
-            const item = document.createElement("div");
-            item.className = "fila-item";
-            item.innerHTML = `
-              <div>
-                <strong>${p.nome}</strong><br>
-                <small>CPF/Doc: ${p.cpf || p.documento || "—"} | Tipo: ${p.tipo || "—"}</small>
-              </div>
-              <div class="acoes-paciente">
-                <button class="btn btn-selecionar" onclick="selecionarPaciente('${p.nome}')">📝 Preencher</button>
-                <button class="btn btn-tv" onclick="chamarNaTV('${p.nome}')">📺 Chamar</button>
-              </div>
-            `;
-            div.appendChild(item);
-          });
-        })
-        .catch(() => {
-          document.getElementById("fila-pacientes").innerHTML =
-            "<p style='color:red; text-align:center;'>Erro ao carregar pacientes. Verifique se a API está rodando na porta 3000.</p>";
-        });
-    }
-
-    function selecionarPaciente(nome) {
-      document.getElementById("nome").value = nome;
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    }
-
-    function chamarNaTV(nome) {
-      fetch("http://localhost:3000/tv/chamar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          localTipo: "TRIAGEM",
-          localNumero: "01",
-          paciente: nome
-        })
-      })
-      .then(r => {
-        if (!r.ok) throw new Error("Falha ao chamar na TV");
-        return r.json();
-      })
-      .then(() => {
-        alert("✅ " + nome + " foi chamado na TV!");
-        carregarPacientes();
-      })
-      .catch(err => {
-        alert("❌ Erro ao chamar na TV: " + err.message);
-      });
-    }
-
-    function analisarComIA() {
-      clearTimeout(tempoEspera);
-
-      tempoEspera = setTimeout(async () => {
-        const nome = document.getElementById("nome").value;
-        const sintoma = document.getElementById("sintoma").value;
-        const temperatura = document.getElementById("temp").value;
-        const pa = document.getElementById("pa").value;
-        const saturacao = document.getElementById("saturacao").value;
-        const fc = document.getElementById("fc").value;
-        const dor = document.getElementById("dor").value;
-        const observacao = document.getElementById("observacao").value;
-
-        const panel = document.getElementById("ia-panel");
-        const textoAnalise = document.getElementById("ia-analise-texto");
-        const badgeContainer = document.getElementById("ia-badge-container");
-
-        if (!sintoma) {
-          panel.style.display = "none";
-          return;
-        }
-
-        panel.style.display = "block";
-        textoAnalise.innerText = "⏳ Consultando IA médica (Ollama)...";
-        badgeContainer.innerHTML = "";
-
-        try {
-          const response = await fetch("http://localhost:3000/api/analisar-ia", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nome, sintoma, temperatura, pa, saturacao, fc, dor, observacao })
-          });
-
-          if (!response.ok) throw new Error("Falha na requisição da IA");
-
-          const dados = await response.json();
-
-          riscoCalculadoIA = dados.risco || "verde";
-          textoAnalise.innerText = dados.justificativa;
-          badgeContainer.innerHTML = `<span class="badge-risco badge-${riscoCalculadoIA}">IA Sugere: ${riscoCalculadoIA.toUpperCase()}</span>`;
-
-        } catch (err) {
-          textoAnalise.innerText = "⚠️ Não foi possível conectar ao Ollama. Verifique se o serviço local está rodando.";
-        }
-      }, 800);
-    }
-
-    function salvar() {
-      const nome = document.getElementById("nome").value;
-      const sintoma = document.getElementById("sintoma").value;
-      const temperatura = Number(document.getElementById("temp").value);
-      const pa = document.getElementById("pa").value;
-      const saturacao = Number(document.getElementById("saturacao").value);
-      const fc = Number(document.getElementById("fc").value);
-      const dor = document.getElementById("dor").value;
-      const alergia = document.getElementById("alergia").value;
-      const observacao = document.getElementById("observacao").value;
-
-      if (!nome || !sintoma) {
-        alert("Por favor, preencha o nome e selecione o sintoma.");
+      if (!data || data.length === 0) {
+        div.innerHTML = "<p class='empty-msg'>Nenhuma medicação prescrita no momento.</p>";
         return;
       }
 
-      fetch("http://localhost:3000/triagem", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          nome, 
-          sintoma, 
-          temperatura, 
-          pa, 
-          saturacao, 
-          fc, 
-          dor, 
-          alergia, 
-          observacao, 
-          risco: riscoCalculadoIA 
-        })
-      })
-      .then(r => {
-        if (!r.ok) throw new Error("Erro ao salvar triagem");
-        return r.json();
-      })
-      .then(() => {
-        const resultado = document.getElementById("resultado");
-        resultado.innerHTML = `✅ Triagem salva com sucesso! Risco classificado: <span class="badge-risco badge-${riscoCalculadoIA}">${riscoCalculadoIA.toUpperCase()}</span>`;
-        alert("Triagem salva com sucesso!");
-        carregarPacientes();
-      })
-      .catch(err => {
-        alert("❌ Erro ao salvar a triagem: " + err.message);
+      data.forEach((c) => {
+        const jsonStr = encodeURIComponent(JSON.stringify(c));
+        div.innerHTML += `
+          <div class="card">
+            <h3>${c.paciente || "Paciente sem nome"}</h3>
+            <p><b>Medicação:</b> ${c.medicacao || "Não informada"}</p>
+            <p><b>Diagnóstico:</b> ${c.diagnostico || "Não informado"}</p>
+            <p><b>Observações:</b> ${c.obs || "Nenhuma"}</p>
+            <div>
+              <button class="btn btn-receita" onclick="gerarReceitaPDF('${jsonStr}')">
+                📜 Gerar Receita (PDF)
+              </button>
+            </div>
+          </div>
+        `;
       });
+    })
+    .catch((err) => {
+      console.error("Erro medicações:", err);
+      div.innerHTML = "<p class='empty-msg'>Erro ao carregar medicações.</p>";
+    });
+}
+
+// Busca e renderiza os pacientes na fila de espera
+function carregarFilaEspera() {
+  const div = document.getElementById("listaFilaEspera");
+  if (!div) return;
+
+  fetch("/triagens", {
+    headers: { "Accept": "application/json" }
+  })
+    .then(r => {
+      if (!r.ok) throw new Error("Falha na requisição");
+      return r.json();
+    })
+    .then(data => {
+      div.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        div.innerHTML = "<p class='empty-msg'>Nenhum paciente na fila de espera.</p>";
+        return;
+      }
+
+      data.forEach(t => {
+        const riscoClass = (t.risco || 'verde').toLowerCase();
+        div.innerHTML += `
+          <div class="card">
+            <div>
+              <span class="badge-risco ${riscoClass}">${t.risco || 'Verde'}</span>
+              <strong>${t.nome || "Paciente"}</strong>
+            </div>
+            <p><b>Sintoma:</b> ${t.sintoma || 'Não informado'}</p>
+            <button class="btn btn-chamar" onclick="chamarPaciente('${t.nome}')">
+              📢 Chamar Paciente
+            </button>
+          </div>
+        `;
+      });
+    })
+    .catch((err) => {
+      console.error("Erro fila:", err);
+      div.innerHTML = "<p class='empty-msg'>Erro ao carregar fila.</p>";
+    });
+}
+
+// Função para chamar o paciente na TV
+function chamarPaciente(nome) {
+  fetch("/tv/chamar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      localTipo: "CONSULTÓRIO",
+      localNumero: "01",
+      paciente: nome
+    })
+  })
+  .then(r => r.json())
+  .then(() => alert(`✅ ${nome} foi chamado para o atendimento!`))
+  .catch(() => alert("❌ Erro ao chamar o paciente."));
+}
+
+// Gera o arquivo PDF da Receita Médica
+function gerarReceitaPDF(dadosEncoded) {
+  try {
+    const c = JSON.parse(decodeURIComponent(dadosEncoded));
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const dataHoje = new Date().toLocaleDateString('pt-BR');
+
+    // Cabeçalho
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("VG SALVA VIDAS - RECEITA MÉDICA", 105, 20, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Data de Emissão: ${dataHoje}`, 105, 27, { align: "center" });
+
+    doc.setLineWidth(0.5);
+    doc.line(20, 32, 190, 32);
+
+    // Paciente
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Paciente:", 20, 42);
+    doc.setFont("helvetica", "normal");
+    doc.text(c.paciente || "Não informado", 45, 42);
+
+    // Diagnóstico
+    if (c.diagnostico) {
+      doc.setFont("helvetica", "bold");
+      doc.text("Diagnóstico:", 20, 52);
+      doc.setFont("helvetica", "normal");
+      doc.text(c.diagnostico, 50, 52);
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      carregarPacientes();
-      setInterval(carregarPacientes, 10000); // Atualiza a fila a cada 10 segundos
-    });
-  </script>
-</body>
-</html>
+    // Linha divisória
+    doc.setLineWidth(0.2);
+    doc.line(20, 58, 190, 58);
+
+    // Prescrição
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Uso / Prescrição Médica:", 20, 70);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(c.medicacao || "Nenhuma", 25, 82, { maxWidth: 165 });
+
+    // Orientações / Observações
+    if (c.obs) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Instruções de Uso / Observações:", 20, 105);
+      doc.setFont("helvetica", "normal");
+      doc.text(c.obs, 20, 113, { maxWidth: 170 });
+    }
+
+    // Rodapé e Assinatura
+    doc.line(60, 180, 150, 180);
+    doc.setFontSize(10);
+    doc.text("Assinatura e Carimbo do Médico(a)", 105, 186, { align: "center" });
+
+    const nomeArquivo = (c.paciente || "Paciente").replace(/\s+/g, '_');
+    doc.save(`Receita_${nomeArquivo}.pdf`);
+  } catch (err) {
+    alert("Erro ao gerar PDF da receita.");
+    console.error(err);
+  }
+}
+
+// Inicialização segura no carregamento da página
+document.addEventListener("DOMContentLoaded", () => {
+  carregarMedicacoesPrescritas();
+  carregarFilaEspera();
+  setInterval(carregarFilaEspera, 10000);
+});
+</script>

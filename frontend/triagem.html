@@ -130,7 +130,7 @@
     </div>
 
     <!-- Exibição do Risco Final -->
-    <div id="resultado" style="margin-bottom: 16px; font-weight: bold;"></div>
+    <div id="resultado"></div>
 
     <button class="btn btn-salvar" onclick="salvar()">💾 Finalizar e Salvar Triagem</button>
 
@@ -162,7 +162,7 @@
             item.innerHTML = `
               <div>
                 <strong>${p.nome}</strong><br>
-                <small>CPF/Doc: ${p.cpf || p.documento || "—"} | Tipo: ${p.tipo || "—"}</small>
+                <small>CPF: ${p.cpf || p.documento || "—"} | Tipo: ${p.tipo || "—"}</small>
               </div>
               <div class="acoes-paciente">
                 <button class="btn btn-selecionar" onclick="selecionarPaciente('${p.nome}')">📝 Preencher</button>
@@ -188,7 +188,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          localTipo: "TRIAGEM",
+          localTipo: "GUICHÊ",
           localNumero: "01",
           paciente: nome
         })
@@ -229,7 +229,7 @@
         }
 
         panel.style.display = "block";
-        textoAnalise.innerText = "⏳ Consultando IA médica (Ollama)...";
+        textoAnalise.innerText = "⏳ Consultando IA médica...";
         badgeContainer.innerHTML = "";
 
         try {
@@ -248,7 +248,7 @@
           badgeContainer.innerHTML = `<span class="badge-risco badge-${riscoCalculadoIA}">IA Sugere: ${riscoCalculadoIA.toUpperCase()}</span>`;
 
         } catch (err) {
-          textoAnalise.innerText = "⚠️ Não foi possível conectar ao Ollama. Verifique se o serviço local está rodando.";
+          textoAnalise.innerText = "⚠️ Não foi possível conectar ao serviço de IA no servidor.";
         }
       }, 800);
     }
@@ -265,7 +265,7 @@
       const observacao = document.getElementById("observacao").value;
 
       if (!nome || !sintoma) {
-        alert("Por favor, preencha o nome e selecione o sintoma.");
+        alert("Por favor, preencha o nome e o sintoma.");
         return;
       }
 
@@ -291,21 +291,9 @@
       })
       .then(() => {
         const resultado = document.getElementById("resultado");
-        resultado.innerHTML = `✅ Triagem salva com sucesso! Risco classificado: <span class="badge-risco badge-${riscoCalculadoIA}">${riscoCalculadoIA.toUpperCase()}</span>`;
+        resultado.className = riscoCalculadoIA;
+        resultado.innerHTML = "CLASSIFICAÇÃO DE RISCO: " + riscoCalculadoIA.toUpperCase();
         alert("Triagem salva com sucesso!");
-        
-        // Limpa o formulário após salvar
-        document.getElementById("nome").value = "";
-        document.getElementById("temp").value = "";
-        document.getElementById("pa").value = "";
-        document.getElementById("saturacao").value = "";
-        document.getElementById("fc").value = "";
-        document.getElementById("sintoma").value = "";
-        document.getElementById("dor").value = "0";
-        document.getElementById("alergia").value = "";
-        document.getElementById("observacao").value = "";
-        document.getElementById("ia-panel").style.display = "none";
-
         carregarPacientes();
       })
       .catch(err => {
@@ -315,7 +303,7 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       carregarPacientes();
-      setInterval(carregarPacientes, 10000); // Atualiza a fila a cada 10 segundos
+      setInterval(carregarPacientes, 10000);
     });
   </script>
 </body>

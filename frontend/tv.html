@@ -1,411 +1,310 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Painel TV - VG Salva Vidas</title>
+  <title>Triagem - VG Salva Vidas</title>
+  <link rel="stylesheet" href="css/2style.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
-    * { 
-      box-sizing: border-box; 
-      margin: 0; 
-      padding: 0; 
-      font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-    }
-
-    body {
-      background-color: #0b1325;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-      color: #f8fafc;
-    }
-
-    /* Barra Superior Informativa */
-    .top-bar {
-      height: 8vh;
-      background: linear-gradient(90deg, #0f172a, #1e293b);
-      border-bottom: 2px solid #0284c7;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 3vw;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    .hospital-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 1.8vw;
-      font-weight: 800;
-      color: #ffffff;
-      letter-spacing: 1px;
-    }
-
-    .hospital-brand span {
-      color: #38bdf8;
-    }
-
-    .top-info {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-    }
-
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(34, 197, 94, 0.15);
-      border: 1px solid rgba(34, 197, 94, 0.3);
-      color: #4ade80;
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.9vw;
-      font-weight: 600;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      background-color: #22c55e;
-      border-radius: 50%;
-      box-shadow: 0 0 8px #22c55e;
-    }
-
-    .clock {
-      font-size: 1.6vw;
-      font-weight: 700;
-      color: #94a3b8;
-      letter-spacing: 1px;
-    }
-
-    /* Container Principal */
-    .tv-container {
-      display: flex;
-      flex: 1;
-      padding: 2vw;
-      gap: 2vw;
-    }
-
-    .left-panel {
-      display: flex;
-      flex-direction: column;
-      width: 32%;
-      gap: 2vw;
-    }
-
-    .right-panel {
-      display: flex;
-      flex-direction: column;
-      width: 68%;
-      gap: 2vw;
-    }
-
-    /* Estilo Base das Caixas */
-    .box {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-      position: relative;
-    }
-
-    .box-header {
-      font-size: 1.1vw;
-      font-weight: 700;
+    .badge-risco {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      color: #fff;
       text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #38bdf8;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      margin-top: 8px;
     }
-
-    /* Painel do Local */
-    .local-box { 
-      flex: 1;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-      border-left: 6px solid #0284c7;
-    }
-    
-    .local-type {
-      color: #94a3b8;
-      font-size: 1.8vw;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    .local-number {
-      color: #38bdf8;
-      font-size: 8vw;
-      font-weight: 900;
-      line-height: 1;
-      margin-top: 10px;
-      text-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
-    }
-
-    /* Painel do Histórico */
-    .history-box {
-      flex: 1.2;
-    }
-    
-    #history-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    
-    #history-list li {
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 10px;
-      padding: 14px 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 1.1vw;
-      font-weight: 600;
-      color: #cbd5e1;
-    }
-
-    #history-list li .hist-name {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 65%;
-    }
-
-    #history-list li .hist-local {
-      color: #22d3ee;
-      background: rgba(34, 211, 238, 0.1);
-      border: 1px solid rgba(34, 211, 238, 0.2);
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 0.9vw;
-      font-weight: 700;
-    }
-
-    /* Painel Principal do Paciente */
-    .patient-box { 
-      flex: 1; 
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-      border: 2px solid #0284c7;
-      border-radius: 20px;
-      padding: 40px;
-    }
-    
-    .patient-label {
-      font-size: 1.3vw;
-      font-weight: 700;
-      color: #94a3b8;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      margin-bottom: 20px;
-    }
-
-    .patient-name {
-      color: #ffffff;
-      font-size: 5.2vw;
-      font-weight: 900;
-      line-height: 1.1;
-      word-break: break-word;
-      text-transform: uppercase;
-      letter-spacing: -1px;
-    }
-
-    /* Rodapé do Painel */
-    .bottom-bar {
-      height: 5vh;
-      background-color: #0f172a;
-      border-top: 1px solid #1e293b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.9vw;
-      color: #64748b;
-      font-weight: 500;
-    }
-
-    /* Animações e Efeitos de Destaque */
-    @keyframes highlight-card {
-      0% {
-        border-color: #38bdf8;
-        box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.5);
-      }
-      50% {
-        background-color: #0369a1;
-      }
-      100% {
-        border-color: #0284c7;
-        box-shadow: 0 0 30px rgba(56, 189, 248, 0);
-      }
-    }
-    
-    .flash { 
-      animation: highlight-card 0.7s ease-in-out 3; 
-    }
+    .badge-vermelho { background-color: #dc3545; }
+    .badge-amarelo { background-color: #ffc107; color: #333; }
+    .badge-verde { background-color: #28a745; }
+    .badge-azul { background-color: #17a2b8; }
   </style>
 </head>
+
 <body>
+  <div class="container">
 
-  <!-- Header Superior Corporativo -->
-  <header class="top-bar">
-    <div class="hospital-brand">
-    <span>VG SALVA VIDAS</span>
+    <!-- Cabeçalho -->
+    <div class="header-container">
+      <h2>🏥 Triagem Hospitalar</h2>
+      <button class="btn btn-abrir-tv" onclick="window.open('tv.html','_blank')">📺 Abrir Tela da TV</button>
     </div>
-    <div class="top-info">
-      <div class="status-badge">
-        <div class="status-dot"></div>
+
+    <!-- Fila de Pacientes -->
+    <div class="pacientes-fila">
+      <h3>
+        Pacientes Cadastrados no Atendimento
+        <span>Selecione para triagem ou chame na TV</span>
+      </h3>
+      
+      <div id="fila-pacientes">
+        <p style="color:var(--text-muted); text-align:center;">Carregando...</p>
       </div>
-      <div class="clock" id="relogio">00:00:00</div>
-    </div>
-  </header>
 
-  <!-- Corpo Principal -->
-  <div class="tv-container">
+      <button class="btn btn-refresh" onclick="carregarPacientes()">🔄 Atualizar lista</button>
+    </div>
+
+    <hr>
+
+    <!-- Formulário Avançado de Triagem -->
+    <h3 class="form-section-title">📋 Formulário Avançado de Triagem</h3>
     
-    <div class="left-panel">
-      <!-- Caixa de Local -->
-      <div class="box local-box">
-        <div class="local-type" id="local-tipo">GUICHÊ</div>
-        <div class="local-number" id="local-numero">--</div>
+    <div class="form-group" style="margin-bottom: 16px;">
+      <label for="nome">Nome Completo do Paciente *</label>
+      <input id="nome" type="text" placeholder="Ex: João da Silva" required>
+    </div>
+
+    <!-- Grid de Sinais Vitais -->
+    <div class="grid-vitais">
+      <div class="form-group">
+        <label for="temp">Temperatura (°C)</label>
+        <input id="temp" type="number" step="0.1" placeholder="Ex: 36.5" oninput="analisarComIA()">
       </div>
 
-      <!-- Caixa do Histórico -->
-      <div class="box history-box">
-        <div class="box-header">
-          📋 Últimas Chamadas
-        </div>
-        <ul id="history-list">
-          <!-- Preenchido via JavaScript -->
-        </ul>
+      <div class="form-group">
+        <label for="pa">Pressão Arterial (PA)</label>
+        <input id="pa" type="text" placeholder="Ex: 120/80" oninput="analisarComIA()">
+      </div>
+
+      <div class="form-group">
+        <label for="saturacao">Saturação O₂ (%)</label>
+        <input id="saturacao" type="number" placeholder="Ex: 98" oninput="analisarComIA()">
+      </div>
+
+      <div class="form-group">
+        <label for="fc">Freq. Cardíaca (BPM)</label>
+        <input id="fc" type="number" placeholder="Ex: 80" oninput="analisarComIA()">
       </div>
     </div>
-    
-    <div class="right-panel">
-      <!-- Caixa Principal do Paciente Chamado -->
-      <div class="box patient-box">
-        <div class="patient-label">Paciente Chamado</div>
-        <div class="patient-name" id="patient-name">AGUARDANDO...</div>
+
+    <!-- Queixa e Escala de Dor -->
+    <div class="grid-vitais">
+      <div class="form-group">
+        <label for="sintoma">Sintoma Principal *</label>
+        <select id="sintoma" required onchange="analisarComIA()">
+          <option value="">Selecione o sintoma</option>
+          <option value="dor_leve">Dor leve</option>
+          <option value="resfriado">Resfriado</option>
+          <option value="coriza">Coriza</option>
+          <option value="tosse">Tosse</option>
+          <option value="febre">Febre</option>
+          <option value="vomito">Vômito</option>
+          <option value="diarreia">Diarreia</option>
+          <option value="falta_ar_moderada">Falta de ar moderada</option>
+          <option value="falta_ar_grave">Falta de ar grave</option>
+          <option value="infarto">Suspeita de infarto</option>
+          <option value="avc">Suspeita de AVC</option>
+          <option value="convulsao">Convulsão</option>
+          <option value="hemorragia">Hemorragia</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="dor">Escala de Dor (0 a 10)</label>
+        <select id="dor" onchange="analisarComIA()">
+          <option value="0">0 - Sem Dor</option>
+          <option value="2">1-3 Leve</option>
+          <option value="5">4-6 Moderada</option>
+          <option value="8">7-9 Intensa</option>
+          <option value="10">10 - Insuportável</option>
+        </select>
       </div>
     </div>
+
+    <div class="form-group" style="margin-bottom: 16px;">
+      <label for="alergia">Alergias Conhecidas</label>
+      <input id="alergia" type="text" placeholder="Ex: Penicilina, Dipirona, Nenhuma">
+    </div>
+
+    <div class="form-group">
+      <label for="observacao">Observações Clínicas e Histórico</label>
+      <textarea id="observacao" placeholder="Detalhe outros sintomas, comorbidades ou medicamentos em uso..." oninput="analisarComIA()"></textarea>
+    </div>
+
+    <!-- Painel de Exibição da IA -->
+    <div id="ia-panel" style="display: none; background: #f0f7ff; border: 1px solid #b8daff; border-radius: 8px; padding: 16px; margin: 16px 0;">
+      <h4 style="margin: 0 0 8px 0; color: #004085;">🤖 Análise Automática da IA</h4>
+      <p id="ia-analise-texto" style="margin: 0; color: #333;">Analisando...</p>
+      <div id="ia-badge-container" style="margin-top: 10px;"></div>
+    </div>
+
+    <!-- Exibição do Risco Final -->
+    <div id="resultado"></div>
+
+    <button class="btn btn-salvar" onclick="salvar()">💾 Finalizar e Salvar Triagem</button>
 
   </div>
 
-  <!-- Rodapé Institucional -->
-  <footer class="bottom-bar">
-    Atenção: Acompanhe o seu nome na tela e dirija-se ao local indicado.
-  </footer>
+  <script>
+    let riscoCalculadoIA = "verde";
+    let tempoEspera = null;
 
-<script>
-let ultimoId = null;
+    function carregarPacientes() {
+      fetch("http://localhost:3000/pacientes")
+        .then(r => {
+          if (!r.ok) throw new Error("Erro na requisição");
+          return r.json();
+        })
+        .then(pacientes => {
+          const div = document.getElementById("fila-pacientes");
+          const fila = pacientes.filter(p => p.status === "triagem" || !p.status);
 
-// Relógio em tempo real
-function atualizarRelogio() {
-  const agora = new Date();
-  document.getElementById("relogio").innerText = agora.toLocaleTimeString('pt-BR');
-}
-setInterval(atualizarRelogio, 1000);
-atualizarRelogio();
+          if (fila.length === 0) {
+            div.innerHTML = "<p style='color:var(--text-muted); text-align:center;'>Nenhum paciente aguardando.</p>";
+            return;
+          }
 
-// Sinal sonoro corporativo via Web Audio API
-function tocarSinal() {
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+          div.innerHTML = "";
+          fila.forEach(p => {
+            const item = document.createElement("div");
+            item.className = "fila-item";
+            item.innerHTML = `
+              <div>
+                <strong>${p.nome}</strong><br>
+                <small>CPF: ${p.cpf || p.documento || "—"} | Tipo: ${p.tipo || "—"}</small>
+              </div>
+              <div class="acoes-paciente">
+                <button class="btn btn-selecionar" onclick="selecionarPaciente('${p.nome}')">📝 Preencher</button>
+                <button class="btn btn-tv" onclick="chamarNaTV('${p.nome}')">📺 Chamar</button>
+              </div>
+            `;
+            div.appendChild(item);
+          });
+        })
+        .catch(() => {
+          document.getElementById("fila-pacientes").innerHTML =
+            "<p style='color:red; text-align:center;'>Erro ao carregar pacientes. Verifique se a API está rodando na porta 3000.</p>";
+        });
+    }
 
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
-  osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.3); 
+    function selecionarPaciente(nome) {
+      document.getElementById("nome").value = nome;
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
 
-  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+    function chamarNaTV(nome) {
+      fetch("http://localhost:3000/tv/chamar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          localTipo: "GUICHÊ",
+          localNumero: "01",
+          paciente: nome
+        })
+      })
+      .then(r => {
+        if (!r.ok) throw new Error("Falha ao chamar na TV");
+        return r.json();
+      })
+      .then(() => {
+        alert("✅ " + nome + " foi chamado na TV!");
+        carregarPacientes();
+      })
+      .catch(err => {
+        alert("❌ Erro ao chamar na TV: " + err.message);
+      });
+    }
 
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
+    function analisarComIA() {
+      clearTimeout(tempoEspera);
 
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.8);
-}
+      tempoEspera = setTimeout(async () => {
+        const nome = document.getElementById("nome").value;
+        const sintoma = document.getElementById("sintoma").value;
+        const temperatura = document.getElementById("temp").value;
+        const pa = document.getElementById("pa").value;
+        const saturacao = document.getElementById("saturacao").value;
+        const fc = document.getElementById("fc").value;
+        const dor = document.getElementById("dor").value;
+        const observacao = document.getElementById("observacao").value;
 
-// Chamada de áudio por síntese de voz
-function falarChamada(paciente, tipo, numero) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const texto = `Paciente ${paciente}, comparecer ao ${tipo} ${numero}`;
-    const mensagem = new SpeechSynthesisUtterance(texto);
-    mensagem.lang = 'pt-BR';
-    mensagem.rate = 0.95;
-    window.speechSynthesis.speak(mensagem);
-  }
-}
+        const panel = document.getElementById("ia-panel");
+        const textoAnalise = document.getElementById("ia-analise-texto");
+        const badgeContainer = document.getElementById("ia-badge-container");
 
-// Requisição e atualização em tempo real
-function atualizar() {
-  fetch("/tv/chamada")
-    .then(r => r.json())
-    .then(data => {
-      const chamada = data.chamada;
-      const historico = data.historico || [];
-
-      if (chamada) {
-        const tipo = chamada.localTipo || "GUICHÊ";
-        const numero = chamada.localNumero || "--";
-        const paciente = chamada.paciente || "AGUARDANDO...";
-
-        document.getElementById("local-tipo").innerText = tipo;
-        document.getElementById("local-numero").innerText = numero;
-        document.getElementById("patient-name").innerText = paciente;
-
-        if (chamada.id !== ultimoId) {
-          ultimoId = chamada.id;
-          
-          const patientBox = document.querySelector(".patient-box");
-          patientBox.classList.remove("flash");
-          void patientBox.offsetWidth;
-          patientBox.classList.add("flash");
-
-          tocarSinal();
-          setTimeout(() => {
-            falarChamada(paciente, tipo, numero);
-          }, 800);
+        if (!sintoma) {
+          panel.style.display = "none";
+          return;
         }
+
+        panel.style.display = "block";
+        textoAnalise.innerText = "⏳ Consultando IA médica...";
+        badgeContainer.innerHTML = "";
+
+        try {
+          const response = await fetch("http://localhost:3000/api/analisar-ia", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nome, sintoma, temperatura, pa, saturacao, fc, dor, observacao })
+          });
+
+          if (!response.ok) throw new Error("Falha na requisição da IA");
+
+          const dados = await response.json();
+
+          riscoCalculadoIA = dados.risco || "verde";
+          textoAnalise.innerText = dados.justificativa;
+          badgeContainer.innerHTML = `<span class="badge-risco badge-${riscoCalculadoIA}">IA Sugere: ${riscoCalculadoIA.toUpperCase()}</span>`;
+
+        } catch (err) {
+          textoAnalise.innerText = "⚠️ Não foi possível conectar ao serviço de IA no servidor.";
+        }
+      }, 800);
+    }
+
+    function salvar() {
+      const nome = document.getElementById("nome").value;
+      const sintoma = document.getElementById("sintoma").value;
+      const temperatura = Number(document.getElementById("temp").value);
+      const pa = document.getElementById("pa").value;
+      const saturacao = Number(document.getElementById("saturacao").value);
+      const fc = Number(document.getElementById("fc").value);
+      const dor = document.getElementById("dor").value;
+      const alergia = document.getElementById("alergia").value;
+      const observacao = document.getElementById("observacao").value;
+
+      if (!nome || !sintoma) {
+        alert("Por favor, preencha o nome e o sintoma.");
+        return;
       }
 
-      const list = document.getElementById("history-list");
-      list.innerHTML = "";
-      historico.slice(0, 4).forEach(h => {
-        const li = document.createElement("li");
-        const tipo = h.localTipo ? h.localTipo.substring(0, 4) : "GUIC";
-        li.innerHTML = `
-          <span class="hist-name">${h.paciente}</span> 
-          <span class="hist-local">${tipo}. ${h.localNumero}</span>
-        `;
-        list.appendChild(li);
+      fetch("http://localhost:3000/triagem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          nome, 
+          sintoma, 
+          temperatura, 
+          pa, 
+          saturacao, 
+          fc, 
+          dor, 
+          alergia, 
+          observacao, 
+          risco: riscoCalculadoIA 
+        })
+      })
+      .then(r => {
+        if (!r.ok) throw new Error("Erro ao salvar triagem");
+        return r.json();
+      })
+      .then(() => {
+        const resultado = document.getElementById("resultado");
+        resultado.className = riscoCalculadoIA;
+        resultado.innerHTML = "CLASSIFICAÇÃO DE RISCO: " + riscoCalculadoIA.toUpperCase();
+        alert("Triagem salva com sucesso!");
+        carregarPacientes();
+      })
+      .catch(err => {
+        alert("❌ Erro ao salvar a triagem: " + err.message);
       });
-    })
-    .catch(err => console.log("Erro ao buscar chamada:", err));
-}
+    }
 
-atualizar();
-setInterval(atualizar, 2000);
-</script>
-
+    document.addEventListener("DOMContentLoaded", () => {
+      carregarPacientes();
+      setInterval(carregarPacientes, 10000);
+    });
+  </script>
 </body>
 </html>
